@@ -1,7 +1,6 @@
 
 'use client';
 
-import type { Metadata } from 'next';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider } from '@/context/auth-context';
@@ -16,10 +15,6 @@ const inter = Inter({
   display: 'swap',
   variable: '--font-body',
 });
-
-// Metadata can't be dynamically changed in a client component, 
-// so we define it here statically. For dynamic metadata, a different approach is needed.
-// This metadata object is now illustrative, actual metadata should be in a server component.
 
 function AppContent({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();

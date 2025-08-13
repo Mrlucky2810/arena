@@ -1,6 +1,7 @@
+
 "use client";
 
-import { referralData } from "@/lib/mock-data";
+import { referralData, userAccount } from "@/lib/mock-data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Copy, Users, Wallet, TrendingUp, Gift } from "lucide-react";
@@ -8,11 +9,13 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Badge } from "../ui/badge";
 import { StatCard } from "../dashboard/stat-card";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/context/auth-context";
 
 export function ReferralDashboard() {
   const { toast } = useToast();
-  // Use a generic referral link instead of depending on userAccount
-  const referralLink = `https://apexarena.com/register?ref=user123`;
+  const { userData, loading } = useAuth();
+
+  const referralLink = `https://apexarena.com/register?ref=${userData?.name.toLowerCase() || userAccount.name.toLowerCase()}`;
   
   const copyToClipboard = () => {
     navigator.clipboard.writeText(referralLink);
@@ -21,6 +24,8 @@ export function ReferralDashboard() {
         description: "Referral link copied to clipboard.",
     });
   }
+  
+  if (loading) return <div>Loading...</div>
 
   return (
     <div className="space-y-8">

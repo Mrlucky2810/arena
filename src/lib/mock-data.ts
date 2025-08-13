@@ -175,6 +175,11 @@ export const sportsData = {
     ]
 };
 
+export const userAccount = {
+    name: "John Doe",
+    email: "john.doe@example.com",
+    balance: 12345.67
+}
 
 export const referralData = {
     totalReferrals: 28,
