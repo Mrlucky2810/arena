@@ -1,4 +1,3 @@
-
 "use client"
 
 import Link from "next/link";
@@ -104,19 +103,22 @@ export function GuestDashboard() {
                 <h2 className="text-3xl font-bold tracking-tight mb-4">Why Choose Apex Arena?</h2>
                 <p className="text-muted-foreground max-w-2xl mx-auto mb-8">We are committed to providing the best online gaming experience with top-notch security, lightning-fast payouts, and a massive selection of games.</p>
                 <div className="grid md:grid-cols-3 gap-8">
-                    {features.map(feature => (
-                        <Card key={feature.title} className="text-left">
-                            <CardHeader className="flex flex-row items-center gap-4">
-                                <div className="p-3 rounded-lg bg-primary/10">
-                                    <feature.icon className="w-6 h-6 text-primary" />
-                                </div>
-                                <CardTitle>{feature.title}</CardTitle>
-                            </CardHeader>
-                            <CardContent>
-                                <p className="text-muted-foreground">{feature.description}</p>
-                            </CardContent>
-                        </Card>
-                    ))}
+                    {features.map(feature => {
+                        const FeatureIcon = feature.icon;
+                        return (
+                            <Card key={feature.title} className="text-left">
+                                <CardHeader className="flex flex-row items-center gap-4">
+                                    <div className="p-3 rounded-lg bg-primary/10">
+                                        <FeatureIcon className="w-6 h-6 text-primary" />
+                                    </div>
+                                    <CardTitle>{feature.title}</CardTitle>
+                                </CardHeader>
+                                <CardContent>
+                                    <p className="text-muted-foreground">{feature.description}</p>
+                                </CardContent>
+                            </Card>
+                        );
+                    })}
                 </div>
             </section>
             
@@ -155,5 +157,4 @@ export function GuestDashboard() {
 
         </div>
     )
-
-    
+}// Added this missing closing brace!

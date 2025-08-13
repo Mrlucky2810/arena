@@ -1,7 +1,6 @@
-
 "use client";
 
-import { userAccount, referralData } from "@/lib/mock-data";
+import { referralData } from "@/lib/mock-data";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Copy, Users, Wallet, TrendingUp, Gift } from "lucide-react";
@@ -12,7 +11,8 @@ import { useToast } from "@/hooks/use-toast";
 
 export function ReferralDashboard() {
   const { toast } = useToast();
-  const referralLink = `https://apexarena.com/register?ref=${userAccount.name.toLowerCase()}`;
+  // Use a generic referral link instead of depending on userAccount
+  const referralLink = `https://apexarena.com/register?ref=user123`;
   
   const copyToClipboard = () => {
     navigator.clipboard.writeText(referralLink);
