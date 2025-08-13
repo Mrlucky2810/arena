@@ -7,7 +7,6 @@ import { useEffect } from 'react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal } from 'lucide-react';
 import Link from 'next/link';
-import { SidebarProvider } from '@/components/ui/sidebar';
 import { AdminDashboardLayout } from '@/components/admin/admin-dashboard-layout';
 
 
@@ -40,6 +39,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
     
     return (
-        <>{children}</>
+        <AdminDashboardLayout>
+            {children}
+        </AdminDashboardLayout>
     );
 }
