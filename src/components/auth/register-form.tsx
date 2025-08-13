@@ -18,6 +18,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name is too short"),
@@ -37,6 +38,7 @@ export function RegisterForm() {
   const router = useRouter();
   const { register } = useAuth();
   const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -49,54 +51,58 @@ export function RegisterForm() {
     },
   });
 
-  const handleFinalSubmit = async (data: z.infer<typeof formSchema>) => {
+  async function onSubmit(data: z.infer<typeof formSchema>) {
+    setIsSubmitting(true);
     const { success, message, role } = await register(data.name, data.email, data.password);
     if (success) {
         toast({
             title: "Account Created!",
-            description: "You have been successfully registered.",
+            description: role === 'admin' ? "Admin registered successfully." : "You have been successfully registered.",
         });
-        if (role === 'admin') {
-            router.push("/admin/dashboard");
-        } else {
-            router.push("/dashboard");
-        }
+        setTimeout(() => {
+            if (role === 'admin') {
+                router.push("/admin/dashboard");
+            } else {
+                router.push("/dashboard");
+            }
+        }, 500);
     } else {
         toast({
             variant: "destructive",
             title: "Registration Failed",
             description: message,
         });
+        setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="space-y-6">
-        <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleFinalSubmit)} className="space-y-4">
-            <FormField control={form.control} name="name" render={({ field }) => (
-                <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>
-            )} />
-            <FormField control={form.control} name="email" render={({ field }) => (
-                <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="you@example.com" {...field} /></FormControl><FormMessage /></FormItem>
-            )} />
-            <FormField control={form.control} name="password" render={({ field }) => (
-                <FormItem><FormLabel>Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl><FormMessage /></FormItem>
-            )} />
-            <FormField control={form.control} name="confirmPassword" render={({ field }) => (
-                <FormItem><FormLabel>Confirm Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl><FormMessage /></FormItem>
-            )} />
-            <FormField control={form.control} name="terms" render={({ field }) => (
-                <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
-                <div className="space-y-1 leading-none">
-                    <FormLabel>I agree to the Terms & Conditions</FormLabel>
-                    <FormMessage />
-                </div>
-                </FormItem>
-            )} />
-            <Button type="submit" className="w-full !mt-6" size="lg">Create Account</Button>
-          </form>
-        </Form>
-    </div>
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+        <FormField control={form.control} name="name" render={({ field }) => (
+            <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>
+        )} />
+        <FormField control={form.control} name="email" render={({ field }) => (
+            <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="you@example.com" {...field} /></FormControl><FormMessage /></FormItem>
+        )} />
+        <FormField control={form.control} name="password" render={({ field }) => (
+            <FormItem><FormLabel>Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl><FormMessage /></FormItem>
+        )} />
+        <FormField control={form.control} name="confirmPassword" render={({ field }) => (
+            <FormItem><FormLabel>Confirm Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl><FormMessage /></FormItem>
+        )} />
+        <FormField control={form.control} name="terms" render={({ field }) => (
+            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+            <div className="space-y-1 leading-none">
+                <FormLabel>I agree to the Terms & Conditions</FormLabel>
+                <FormMessage />
+            </div>
+            </FormItem>
+        )} />
+        <Button type="submit" className="w-full !mt-6" size="lg" disabled={isSubmitting}>
+          {isSubmitting ? 'Registering...' : 'Create Account'}
+        </Button>
+      </form>
+    </Form>
   );
 }

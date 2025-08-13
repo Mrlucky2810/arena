@@ -21,6 +21,7 @@ import { Separator } from "../ui/separator";
 import { Chrome, Facebook } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
 
 const formSchema = z.object({
   email: z.string().email({ message: "Invalid email address." }),
@@ -32,6 +33,7 @@ export function LoginForm() {
   const router = useRouter();
   const { login } = useAuth();
   const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -43,6 +45,7 @@ export function LoginForm() {
   });
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
+    setIsSubmitting(true);
     const { success, message, role } = await login(values.email, values.password);
     if (success) {
       toast({
@@ -52,7 +55,7 @@ export function LoginForm() {
       if (role === 'admin') {
         router.push("/admin/dashboard");
       } else {
-        router.push("/dashboard");
+        router.push("/");
       }
     } else {
       toast({
@@ -60,6 +63,7 @@ export function LoginForm() {
         title: "Login Failed",
         description: message,
       });
+      setIsSubmitting(false);
     }
   }
 
@@ -117,8 +121,8 @@ export function LoginForm() {
             Forgot password?
           </Link>
         </div>
-        <Button type="submit" className="w-full !mt-6" size="lg">
-          Log In
+        <Button type="submit" className="w-full !mt-6" size="lg" disabled={isSubmitting}>
+          {isSubmitting ? "Logging in..." : "Log In"}
         </Button>
 
         <div className="relative my-6">

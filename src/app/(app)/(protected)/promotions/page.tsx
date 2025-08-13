@@ -4,43 +4,9 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { promotions } from "@/lib/mock-data";
-import { ArrowRight, Terminal } from "lucide-react";
-import { useAuth } from "@/context/auth-context";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { ArrowRight } from "lucide-react";
 
 export default function PromotionsPage() {
-  const { user, loading } = useAuth();
-  const router = useRouter();
-
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push('/login');
-    }
-  }, [user, loading, router]);
-  
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  if (!user) {
-    return (
-        <Card>
-            <CardContent className="pt-6">
-            <Alert>
-                <Terminal className="h-4 w-4" />
-                <AlertTitle>Access Denied</AlertTitle>
-                <AlertDescription>
-                You have to <Link href="/login" className="font-bold text-primary hover:underline">login</Link> to access this page.
-                </AlertDescription>
-            </Alert>
-            </CardContent>
-        </Card>
-    );
-  }
-
   return (
     <div className="flex flex-col gap-8">
         <div className="flex items-center gap-4">

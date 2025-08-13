@@ -74,7 +74,11 @@ export function MineSweeperGameUI() {
     const currentMultiplier = useMemo(() => {
         if (safeTilesFound === 0) return 1;
         const totalSafeTiles = GRID_SIZE - mineCount;
-        return (1 / (1 - (safeTilesFound / totalSafeTiles))) * (1 + (mineCount/GRID_SIZE));
+        let multiplier = 1;
+        for (let i = 0; i < safeTilesFound; i++) {
+            multiplier *= (GRID_SIZE - mineCount - i) / (GRID_SIZE - i);
+        }
+        return 0.98 / multiplier; // 0.98 is house edge
     }, [safeTilesFound, mineCount]);
 
     const potentialWin = betAmount * currentMultiplier;
@@ -119,22 +123,22 @@ export function MineSweeperGameUI() {
             
             if (newSafeTilesFound === GRID_SIZE - mineCount) {
                 const finalWin = betAmount * currentMultiplier;
-                updateBalance(user.uid, finalWin + betAmount); // Winnings + Stake back
+                updateBalance(user.uid, finalWin + betAmount); // Winnings + stake back
                 setGameState('ended');
                 logGameResult(finalWin, 'perfect');
-                toast({ title: "PERFECT!", description: `You found all gems and won ₹${finalWin.toFixed(2)}!` });
+                toast({ title: "PERFECT!", title_2: `You found all gems and won ₹${(finalWin).toFixed(2)}!` });
             }
         }
     };
     
     const handleCashOut = async () => {
         if (gameState !== 'playing' || safeTilesFound === 0 || !user) return;
-        const totalReturn = potentialWin + betAmount; // Winnings + Stake back
+        const netWin = potentialWin - betAmount;
         try {
-            await updateBalance(user.uid, totalReturn);
+            await updateBalance(user.uid, potentialWin); // Winnings + Stake back
             setGameState('ended');
-            await logGameResult(potentialWin, 'cash_out'); // Log net winnings
-            toast({ title: "Cashed Out!", description: `You won ₹${potentialWin.toFixed(2)}` });
+            await logGameResult(netWin, 'cash_out'); // Log net winnings
+            toast({ title: "Cashed Out!", description: `You won ₹${netWin.toFixed(2)}` });
         } catch(error) {
             toast({ variant: "destructive", title: "Error", description: "Failed to cash out. Please try again." });
         }
@@ -169,7 +173,7 @@ export function MineSweeperGameUI() {
                             )}
                             {gameState === 'playing' && (
                                 <Button size="lg" variant="secondary" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleCashOut} disabled={safeTilesFound === 0}>
-                                    Cash Out (₹{potentialWin.toFixed(2)})
+                                    Cash Out (₹{(potentialWin - betAmount).toFixed(2)})
                                 </Button>
                             )}
                              {gameState === 'ended' && (
@@ -196,8 +200,8 @@ export function MineSweeperGameUI() {
                                 <span className="font-semibold text-emerald-500">{safeTilesFound}</span>
                             </div>
                              <div className="flex justify-between items-center">
-                                <span className="text-muted-foreground">Potential Win</span>
-                                <span className="font-semibold text-emerald-500">₹{potentialWin.toFixed(2)}</span>
+                                <span className="text-muted-foreground">Potential Net Win</span>
+                                <span className="font-semibold text-emerald-500">₹{(potentialWin - betAmount).toFixed(2)}</span>
                             </div>
                         </CardContent>
                     </Card>
@@ -236,13 +240,13 @@ export function MineSweeperGameUI() {
                                     <>
                                         <Gem className="w-20 h-20 text-emerald-400 mb-4" />
                                         <h2 className="text-3xl font-bold">PERFECT RUN!</h2>
-                                        <p className="text-xl text-emerald-400 font-semibold">+₹{potentialWin.toFixed(2)}</p>
+                                        <p className="text-xl text-emerald-400 font-semibold">+₹{(potentialWin - betAmount).toFixed(2)}</p>
                                     </>
-                                ) : safeTilesFound > 0 && tiles.some(t=>t.isRevealed && t.isMine) === false ? (
+                                ) : tiles.some(t=>t.isRevealed && t.isMine) === false && safeTilesFound > 0 ? (
                                     <>
                                         <Gem className="w-20 h-20 text-emerald-400 mb-4" />
                                         <h2 className="text-3xl font-bold">Cashed Out!</h2>
-                                        <p className="text-xl text-emerald-400 font-semibold">+₹{potentialWin.toFixed(2)}</p>
+                                        <p className="text-xl text-emerald-400 font-semibold">+₹{(potentialWin - betAmount).toFixed(2)}</p>
                                     </>
                                 ) : (
                                     <>

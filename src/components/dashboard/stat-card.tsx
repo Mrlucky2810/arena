@@ -15,14 +15,14 @@ type StatCardProps = {
 };
 
 export function StatCard({ title, value, icon: Icon, iconClassName }: StatCardProps) {
-  const { loading } = useAuth();
+  const { loading, user } = useAuth();
 
   if (loading) {
     return (
         <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{title}</CardTitle>
-                <Icon className={cn("h-4 w-4 text-muted-foreground", iconClassName)} />
+                 <Skeleton className="h-4 w-4" />
             </CardHeader>
             <CardContent>
                 <Skeleton className="h-8 w-2/3" />
@@ -38,7 +38,7 @@ export function StatCard({ title, value, icon: Icon, iconClassName }: StatCardPr
         <Icon className={cn("h-4 w-4 text-muted-foreground", iconClassName)} />
       </CardHeader>
       <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
+        <div className="text-2xl font-bold">{user ? value : 'Log in to see'}</div>
       </CardContent>
     </Card>
   );

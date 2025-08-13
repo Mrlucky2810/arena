@@ -26,6 +26,7 @@ export function CrashGameUI() {
   const { user, balance, updateBalance } = useAuth();
   const { toast } = useToast();
   const [betAmount, setBetAmount] = useState(10);
+  const [autoCashOut, setAutoCashOut] = useState(0);
   const [multiplier, setMultiplier] = useState(1.0);
   const [gameState, setGameState] = useState<GameState>("ready");
   const [crashPoint, setCrashPoint] = useState(0);
@@ -67,7 +68,7 @@ export function CrashGameUI() {
     }, 80);
 
     return () => clearInterval(interval);
-  }, [gameState, crashPoint, multiplier, user]);
+  }, [gameState, crashPoint, betAmount, user, logGameResult]);
 
   useEffect(() => {
     const cleanup = handleGameLogic();
@@ -98,10 +99,11 @@ export function CrashGameUI() {
 
   const handleCashOut = async () => {
     if (gameState === "playing" && user) {
+        const netWin = potentialWin - betAmount;
         try {
-            await updateBalance(user.uid, potentialWin);
+            await updateBalance(user.uid, potentialWin); // Give back stake + winnings
             setGameState("cashed_out");
-            await logGameResult(potentialWin - betAmount); // Log net win
+            await logGameResult(netWin); // Log net win
             toast({ title: "Cashed Out!", description: `You won ₹${potentialWin.toFixed(2)}` });
         } catch (error) {
             toast({ variant: "destructive", title: "Error", description: "Failed to cash out. Please try again." });
