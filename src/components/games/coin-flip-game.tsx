@@ -2,11 +2,11 @@
 "use client";
 
 import { useAuth } from "@/context/auth-context";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { Terminal } from "lucide-react";
+import { CoinFlipGameUI } from "./coin-flip-game-ui";
 
 export function CoinFlipGame() {
   const { user } = useAuth();
@@ -28,13 +28,6 @@ export function CoinFlipGame() {
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Game Interface</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-muted-foreground">Coin flip game will be implemented here.</p>
-      </CardContent>
-    </Card>
+    <CoinFlipGameUI />
   );
 }

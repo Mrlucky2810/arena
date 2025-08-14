@@ -3,12 +3,13 @@
 
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
-import { AuthProvider } from '@/context/auth-context';
+import { AuthProvider, useAuth } from '@/context/auth-context';
 import { Inter } from 'next/font/google';
 import { AppHeader } from '@/components/layout/app-header';
 import { AppSidebar } from '@/components/layout/app-sidebar';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useEffect } from 'react';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -18,10 +19,39 @@ const inter = Inter({
 
 function AppContent({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
+    const router = useRouter();
+    const { loading, adminExists, loadingAdminCheck } = useAuth();
+    
     const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/register');
     const isAdminRoute = pathname.startsWith('/admin');
+    const isRegisterAdminRoute = pathname === '/register-admin';
 
-    if (isAuthRoute || isAdminRoute) {
+    useEffect(() => {
+        if (!loadingAdminCheck && !adminExists && !isRegisterAdminRoute) {
+            router.replace('/register-admin');
+        }
+    }, [adminExists, loadingAdminCheck, isRegisterAdminRoute, router]);
+
+    if (loading || loadingAdminCheck) {
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                Loading...
+            </div>
+        );
+    }
+    
+    if (!adminExists) {
+        if (isRegisterAdminRoute) {
+            return <>{children}</>;
+        }
+        return (
+            <div className="flex items-center justify-center min-h-screen">
+                Redirecting to admin setup...
+            </div>
+        );
+    }
+
+    if (isAuthRoute || isAdminRoute || isRegisterAdminRoute) {
         return <>{children}</>;
     }
 

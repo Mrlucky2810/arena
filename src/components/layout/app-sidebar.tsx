@@ -29,8 +29,9 @@ import {
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { user, logout, balance, userData } = useAuth();
-  const userRole = userData?.role || 'user';
+  const { user, logout, inrBalance, cryptoBalance, userData } = useAuth();
+  const totalBalance = inrBalance + cryptoBalance;
+  const userRole = user ? (userData?.role || 'user') : 'guest';
 
   const getInitials = (name = "") => {
     return name.split(' ').map(n => n[0]).join('').substring(0,2).toUpperCase();
@@ -38,14 +39,29 @@ export function AppSidebar() {
   
   const filteredNavItems = navItems.filter(item => {
       if (item.role === 'all') return true;
+      if (userRole === 'guest') return item.role === 'guest' || !item.role;
       return item.role === userRole;
   });
+
+  const getHomeLink = () => {
+    switch(userRole) {
+      case 'admin':
+        return '/admin/dashboard';
+      case 'user':
+        return '/';
+      case 'guest':
+      default:
+        return '/';
+    }
+  }
 
 
   return (
     <Sidebar>
       <SidebarHeader>
-        <Logo />
+        <Link href={getHomeLink()}>
+          <Logo />
+        </Link>
       </SidebarHeader>
       <SidebarContent className="p-4">
         <SidebarMenu>
@@ -79,7 +95,7 @@ export function AppSidebar() {
                 {userData?.name}
               </p>
               <p className="text-xs text-muted-foreground truncate">
-                {userRole === 'admin' ? 'Administrator' : `₹${balance.toLocaleString()}`}
+                {userRole === 'admin' ? 'Administrator' : `₹${totalBalance.toLocaleString()}`}
               </p>
             </div>
             <DropdownMenu>

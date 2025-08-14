@@ -1,6 +1,6 @@
 
 import type { LucideIcon } from "lucide-react";
-import { Coins, Crown, Gamepad2, Gem, Handshake, ShieldCheck, Rocket, Gift, Percent, Star, Users, LayoutDashboard, Home } from "lucide-react";
+import { Coins, Crown, Gamepad2, Gem, Handshake, ShieldCheck, Rocket, Gift, Percent, Star, Users, LayoutDashboard, Home, LifeBuoy, MessagesSquare } from "lucide-react";
 
 export type Game = {
   name: string;
@@ -15,12 +15,21 @@ export type Game = {
 };
 
 export const trendingGames: Game[] = [
-  { name: 'Color Prediction', category: 'Casino', livePlayers: 1254, isHot: true, winMultiplier: '4.5x', thumbnail: 'https://placehold.co/400x300/1E40AF/FFFFFF', href: '/games/color-prediction', rtp: 97, minBet: 10 },
-  { name: 'Crash', category: 'Casino', livePlayers: 987, isHot: true, winMultiplier: '100x+', thumbnail: 'https://placehold.co/400x300/7C3AED/FFFFFF', href: '/games/crash', rtp: 97, minBet: 10 },
-  { name: 'Live Cricket', category: 'Sports', livePlayers: 2345, isHot: false, thumbnail: 'https://placehold.co/400x300/10B981/FFFFFF', href: '/sports', rtp: 97, minBet: 10 },
-  { name: 'Spin Wheel', category: 'Casino', livePlayers: 765, isHot: false, winMultiplier: '50x', thumbnail: 'https://placehold.co/400x300/F59E0B/FFFFFF', href: '/games/spin', rtp: 97, minBet: 10 },
-  { name: 'Mines', category: 'Casino', livePlayers: 432, isHot: false, thumbnail: 'https://placehold.co/400x300/EF4444/FFFFFF', href: '/games/mine', rtp: 97, minBet: 10 },
+  { name: 'Color Prediction', category: 'Casino', livePlayers: 1254, isHot: true, winMultiplier: '4.5x', thumbnail: '/icons/color_prediction.png', href: '/games/color-prediction', rtp: 97, minBet: 10 },
+  { name: 'Crash', category: 'Casino', livePlayers: 987, isHot: true, winMultiplier: '100x+', thumbnail: '/icons/crash.png', href: '/games/crash', rtp: 97, minBet: 10 },
+  { name: 'Spin Wheel', category: 'Casino', livePlayers: 765, isHot: false, winMultiplier: '50x', thumbnail: '/icons/spin_wheel.png', href: '/games/spin', rtp: 97, minBet: 10 },
+  { name: 'Mines', category: 'Casino', livePlayers: 432, isHot: false, thumbnail: '/icons/mine_game.png', href: '/games/mine', rtp: 97, minBet: 10 },
 ];
+
+export const allGames: Game[] = [
+    { name: 'Color Prediction', category: 'Casino', livePlayers: 1254, isHot: true, winMultiplier: '4.5x', thumbnail: '/icons/color_prediction.png', href: '/games/color-prediction', rtp: 97, minBet: 10 },
+    { name: 'Dice', category: 'Casino', livePlayers: 654, isHot: false, winMultiplier: '5x', thumbnail: '/icons/dice_game.png', href: '/games/dice', rtp: 98, minBet: 5 },
+    { name: 'Spin Wheel', category: 'Casino', livePlayers: 765, isHot: false, winMultiplier: '50x', thumbnail: '/icons/spin_wheel.png', href: '/games/spin', rtp: 96, minBet: 20 },
+    { name: 'Crash', category: 'Casino', livePlayers: 987, isHot: true, winMultiplier: '100x+', thumbnail: '/icons/crash.png', href: '/games/crash', rtp: 97.5, minBet: 10 },
+    { name: 'Coin Flip', category: 'Casino', livePlayers: 321, isHot: false, winMultiplier: '1.98x', thumbnail: '/icons/coin_flip.png', href: '/games/coin-flip', rtp: 99, minBet: 1 },
+    { name: 'Mines', category: 'Casino', livePlayers: 432, isHot: false, winMultiplier: 'Up to 500x', thumbnail: '/icons/mine_game.png', href: '/games/mine', rtp: 98.5, minBet: 5 },
+];
+
 
 export const gameCategories = {
   casino: [
@@ -47,24 +56,25 @@ export type NavItem = {
   icon: LucideIcon;
   label?: string;
   disabled?: boolean;
-  role?: 'user' | 'admin' | 'all';
+  role?: 'user' | 'admin' | 'guest' | 'all';
 };
 
 export const navItems: NavItem[] = [
   // User Routes
   { title: "Dashboard", href: "/", icon: Home, role: 'user' },
+  { title: "All Games", href: "/games", icon: Gamepad2, role: 'user'},
   { title: "Deposit", href: "/deposit", icon: Coins, role: 'user' },
   { title: "Withdraw", href: "/withdraw", icon: Gem, role: 'user' },
-  { title: "Sports", href: "/sports", icon: Rocket, role: 'user' },
   { title: "Referrals", href: "/referrals", icon: Handshake, role: 'user' },
   { title: "Promotions", href: "/promotions", icon: Crown, role: 'user' },
-  { title: "Support", href: "/support", icon: ShieldCheck, role: 'all' },
+  { title: "Support", href: "/support", icon: LifeBuoy, role: 'user' },
 
   // Admin Routes
   { title: "Admin Dashboard", href: "/admin/dashboard", icon: LayoutDashboard, role: 'admin' },
   { title: "Manage Deposits", href: "/admin/deposits", icon: Coins, role: 'admin' },
   { title: "Manage Withdrawals", href: "/admin/withdrawals", icon: Gem, role: 'admin' },
   { title: "Manage Users", href: "/admin/users", icon: Users, role: 'admin' },
+  { title: "Support Tickets", href: "/admin/support", icon: MessagesSquare, role: 'admin' },
 ];
 
 export const promotions = [
@@ -125,7 +135,7 @@ export const faqItems = [
     value: "faq-5",
     question: "How does the referral program work?",
     answer:
-      "You can find your unique referral link on the 'Referrals' page. Share this link with your friends. When they sign up and make their first deposit, you will receive a bonus commission. You can track your referral earnings on the same page.",
+      "You can find your unique referral code on the 'Referrals' page. Share this link with your friends. When they sign up and make their first deposit, you will receive a bonus commission. You can track your referral earnings on the same page.",
   },
 ];
 
@@ -174,12 +184,6 @@ export const sportsData = {
         }
     ]
 };
-
-export const userAccount = {
-    name: "John Doe",
-    email: "john.doe@example.com",
-    balance: 12345.67
-}
 
 export const referralData = {
     totalReferrals: 28,

@@ -22,7 +22,7 @@ interface Tile {
 const GRID_SIZE = 25;
 
 export function MineSweeperGameUI() {
-    const { user, balance, updateBalance } = useAuth();
+    const { user, inrBalance, updateBalance } = useAuth();
     const { toast } = useToast();
     const [betAmount, setBetAmount] = useState<number>(10);
     const [mineCount, setMineCount] = useState<number>(5);
@@ -89,12 +89,12 @@ export function MineSweeperGameUI() {
             toast({ variant: "destructive", title: "Invalid Amount", description: "Bet amount must be positive." });
             return;
         }
-        if (betAmount > balance) {
+        if (betAmount > inrBalance) {
             toast({ variant: "destructive", title: "Insufficient Balance", description: "You don't have enough funds to place this bet." });
             return;
         }
         try {
-            await updateBalance(user.uid, -betAmount);
+            await updateBalance(user.uid, -betAmount, 'inr');
             setGameState('playing');
         } catch (error) {
             toast({ variant: "destructive", title: "Error", description: "Could not place your bet. Please try again." });
@@ -123,7 +123,7 @@ export function MineSweeperGameUI() {
             
             if (newSafeTilesFound === GRID_SIZE - mineCount) {
                 const finalWin = betAmount * currentMultiplier;
-                updateBalance(user.uid, finalWin + betAmount); // Winnings + stake back
+                updateBalance(user.uid, finalWin + betAmount, 'inr'); // Winnings + stake back
                 setGameState('ended');
                 logGameResult(finalWin, 'perfect');
                 toast({ title: "PERFECT!", title_2: `You found all gems and won ₹${(finalWin).toFixed(2)}!` });
@@ -135,7 +135,7 @@ export function MineSweeperGameUI() {
         if (gameState !== 'playing' || safeTilesFound === 0 || !user) return;
         const netWin = potentialWin - betAmount;
         try {
-            await updateBalance(user.uid, potentialWin); // Winnings + Stake back
+            await updateBalance(user.uid, potentialWin, 'inr'); // Winnings + Stake back
             setGameState('ended');
             await logGameResult(netWin, 'cash_out'); // Log net winnings
             toast({ title: "Cashed Out!", description: `You won ₹${netWin.toFixed(2)}` });
@@ -169,7 +169,7 @@ export function MineSweeperGameUI() {
                                 <Slider value={[mineCount]} onValueChange={([val]) => setMineCount(val)} min={3} max={20} step={1} disabled={gameState === 'playing'} className="mt-2" />
                             </div>
                             {gameState === 'betting' && (
-                                <Button size="lg" className="w-full" onClick={handleStartGame} disabled={betAmount > balance || betAmount <= 0}>Start Game</Button>
+                                <Button size="lg" className="w-full" onClick={handleStartGame} disabled={betAmount > inrBalance || betAmount <= 0}>Start Game</Button>
                             )}
                             {gameState === 'playing' && (
                                 <Button size="lg" variant="secondary" className="w-full bg-emerald-600 hover:bg-emerald-700 text-white" onClick={handleCashOut} disabled={safeTilesFound === 0}>
@@ -189,7 +189,7 @@ export function MineSweeperGameUI() {
                         <CardContent className="space-y-3 pt-4 text-sm">
                             <div className="flex justify-between items-center">
                                 <span className="text-muted-foreground">Balance</span>
-                                <span className="font-semibold">₹{balance.toLocaleString()}</span>
+                                <span className="font-semibold">₹{inrBalance.toLocaleString()}</span>
                             </div>
                              <div className="flex justify-between items-center">
                                 <span className="text-muted-foreground">Multiplier</span>

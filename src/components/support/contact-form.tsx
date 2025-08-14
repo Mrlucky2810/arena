@@ -17,7 +17,9 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/auth-context";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import { addDoc, collection, serverTimestamp } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 const formSchema = z.object({
   name: z.string().min(2, "Name is too short"),
@@ -29,6 +31,7 @@ const formSchema = z.object({
 export function ContactForm() {
     const { toast } = useToast();
     const { user, userData } = useAuth();
+    const [isSubmitting, setIsSubmitting] = useState(false);
 
     const form = useForm<z.infer<typeof formSchema>>({
         resolver: zodResolver(formSchema),
@@ -44,24 +47,45 @@ export function ContactForm() {
         if(user && userData) {
           form.reset({
             name: userData.name || "",
-            email: userData.email || "",
+            email: user.email || "",
             subject: "",
             message: "",
           })
         }
       }, [user, userData, form])
     
-      function onSubmit(values: z.infer<typeof formSchema>) {
-        console.log("Support form submitted:", values);
-        toast({
-          title: "Message Sent!",
-          description: "Our support team has received your message and will get back to you shortly.",
-        });
-        form.reset({
-            ...values,
-            subject: "",
-            message: "",
-        });
+      async function onSubmit(values: z.infer<typeof formSchema>) {
+        setIsSubmitting(true);
+        try {
+            await addDoc(collection(db, "support_tickets"), {
+                userId: user?.uid || null,
+                name: values.name,
+                email: values.email,
+                subject: values.subject,
+                message: values.message,
+                status: 'open',
+                createdAt: serverTimestamp(),
+            });
+
+            toast({
+                title: "Message Sent!",
+                description: "Our support team has received your message and will get back to you shortly.",
+            });
+            form.reset({
+                ...values,
+                subject: "",
+                message: "",
+            });
+        } catch (error) {
+            console.error("Failed to send message:", error);
+            toast({
+                variant: "destructive",
+                title: "Failed to Send",
+                description: "Could not send your message. Please try again later.",
+            })
+        } finally {
+            setIsSubmitting(false);
+        }
       }
 
   return (
@@ -125,7 +149,9 @@ export function ContactForm() {
             </FormItem>
           )}
         />
-        <Button type="submit" size="lg">Send Message</Button>
+        <Button type="submit" size="lg" disabled={isSubmitting}>
+            {isSubmitting ? "Sending..." : "Send Message"}
+        </Button>
       </form>
     </Form>
   );

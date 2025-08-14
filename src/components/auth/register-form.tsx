@@ -25,6 +25,7 @@ const formSchema = z.object({
   email: z.string().email("Invalid email"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   confirmPassword: z.string(),
+  referralCode: z.string().optional(),
   terms: z.boolean().refine((val) => val === true, {
     message: "You must accept the terms and conditions.",
   }),
@@ -34,9 +35,9 @@ const formSchema = z.object({
 });
 
 
-export function RegisterForm() {
+export function RegisterForm({ isAdminRegistration = false }: { isAdminRegistration?: boolean }) {
   const router = useRouter();
-  const { register } = useAuth();
+  const { register, adminExists } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -47,13 +48,16 @@ export function RegisterForm() {
       email: "",
       password: "",
       confirmPassword: "",
+      referralCode: "",
       terms: false,
     },
   });
 
   async function onSubmit(data: z.infer<typeof formSchema>) {
     setIsSubmitting(true);
-    const { success, message, role } = await register(data.name, data.email, data.password);
+    const roleToRegister = isAdminRegistration && !adminExists ? 'admin' : 'user';
+
+    const { success, message, role } = await register(data.name, data.email, data.password, data.referralCode, roleToRegister);
     if (success) {
         toast({
             title: "Account Created!",
@@ -78,30 +82,35 @@ export function RegisterForm() {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+      <form onSubmit={form.handleSubmit(onSubmit)} className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6">
         <FormField control={form.control} name="name" render={({ field }) => (
-            <FormItem><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>
+            <FormItem className="sm:col-span-1"><FormLabel>Full Name</FormLabel><FormControl><Input placeholder="John Doe" {...field} /></FormControl><FormMessage /></FormItem>
         )} />
         <FormField control={form.control} name="email" render={({ field }) => (
-            <FormItem><FormLabel>Email</FormLabel><FormControl><Input placeholder="you@example.com" {...field} /></FormControl><FormMessage /></FormItem>
+            <FormItem className="sm:col-span-1"><FormLabel>Email</FormLabel><FormControl><Input placeholder="you@example.com" {...field} /></FormControl><FormMessage /></FormItem>
         )} />
         <FormField control={form.control} name="password" render={({ field }) => (
-            <FormItem><FormLabel>Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl><FormMessage /></FormItem>
+            <FormItem className="sm:col-span-1"><FormLabel>Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl><FormMessage /></FormItem>
         )} />
         <FormField control={form.control} name="confirmPassword" render={({ field }) => (
-            <FormItem><FormLabel>Confirm Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl><FormMessage /></FormItem>
+            <FormItem className="sm:col-span-1"><FormLabel>Confirm Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl><FormMessage /></FormItem>
         )} />
+        {!isAdminRegistration && <FormField control={form.control} name="referralCode" render={({ field }) => (
+            <FormItem className="sm:col-span-2"><FormLabel>Referral Code (Optional)</FormLabel><FormControl><Input placeholder="Enter referrer's name" {...field} /></FormControl><FormMessage /></FormItem>
+        )} />}
         <FormField control={form.control} name="terms" render={({ field }) => (
-            <FormItem className="flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
+            <FormItem className="sm:col-span-2 flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>
             <div className="space-y-1 leading-none">
                 <FormLabel>I agree to the Terms & Conditions</FormLabel>
                 <FormMessage />
             </div>
             </FormItem>
         )} />
-        <Button type="submit" className="w-full !mt-6" size="lg" disabled={isSubmitting}>
-          {isSubmitting ? 'Registering...' : 'Create Account'}
-        </Button>
+        <div className="sm:col-span-2">
+            <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
+            {isSubmitting ? 'Registering...' : isAdminRegistration ? 'Register Admin' : 'Create Account'}
+            </Button>
+        </div>
       </form>
     </Form>
   );

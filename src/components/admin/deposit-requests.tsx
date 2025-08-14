@@ -3,13 +3,12 @@
 
 import { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, doc, updateDoc, getDoc } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, getDoc, increment } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/context/auth-context';
 import { CheckCircle, XCircle } from 'lucide-react';
 
 interface DepositRequest {
@@ -27,7 +26,6 @@ export function DepositRequests() {
     const [requests, setRequests] = useState<DepositRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const { toast } = useToast();
-    const { updateBalance } = useAuth();
 
     const fetchRequests = async () => {
         setLoading(true);
@@ -66,7 +64,9 @@ export function DepositRequests() {
             await updateDoc(requestRef, { status: newStatus });
 
             if (newStatus === 'approved') {
-                await updateBalance(request.userId, request.amount);
+                const userDocRef = doc(db, 'users', request.userId);
+                const balanceField = request.type === 'inr' ? 'inrBalance' : 'cryptoBalance';
+                await updateDoc(userDocRef, { [balanceField]: increment(request.amount) });
             }
             
             toast({ title: 'Success', description: `Request has been ${newStatus}.` });

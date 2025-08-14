@@ -23,7 +23,8 @@ const generateCrashPoint = () => {
 };
 
 export function CrashGameUI() {
-  const { user, balance, updateBalance } = useAuth();
+  const { user, inrBalance, cryptoBalance, updateBalance } = useAuth();
+  const totalBalance = inrBalance + cryptoBalance;
   const { toast } = useToast();
   const [betAmount, setBetAmount] = useState(10);
   const [autoCashOut, setAutoCashOut] = useState(0);
@@ -82,12 +83,12 @@ export function CrashGameUI() {
         toast({ variant: "destructive", title: "Invalid Amount", description: "Bet amount must be positive." });
         return;
       }
-      if (betAmount > balance) {
-        toast({ variant: "destructive", title: "Insufficient Balance", description: "You don't have enough funds to place this bet." });
+      if (betAmount > inrBalance) {
+        toast({ variant: "destructive", title: "Insufficient Balance", description: "You don't have enough INR funds to place this bet." });
         return;
       }
       try {
-        await updateBalance(user.uid, -betAmount);
+        await updateBalance(user.uid, -betAmount, 'inr');
         setMultiplier(1.0);
         setCrashPoint(generateCrashPoint());
         setGameState("playing");
@@ -101,7 +102,7 @@ export function CrashGameUI() {
     if (gameState === "playing" && user) {
         const netWin = potentialWin - betAmount;
         try {
-            await updateBalance(user.uid, potentialWin); // Give back stake + winnings
+            await updateBalance(user.uid, potentialWin, 'inr'); // Give back stake + winnings
             setGameState("cashed_out");
             await logGameResult(netWin); // Log net win
             toast({ title: "Cashed Out!", description: `You won ₹${potentialWin.toFixed(2)}` });
@@ -146,7 +147,7 @@ export function CrashGameUI() {
       case 'ready':
       default:
         return (
-          <Button onClick={handleStartFlight} size="lg" className="w-full h-16 text-lg" disabled={betAmount <= 0 || betAmount > balance}>
+          <Button onClick={handleStartFlight} size="lg" className="w-full h-16 text-lg" disabled={betAmount <= 0 || betAmount > inrBalance}>
             <Play className="mr-2" />
             Place Bet (₹{betAmount})
           </Button>
@@ -248,10 +249,10 @@ export function CrashGameUI() {
               <Button
                 variant="secondary"
                 className="w-full"
-                onClick={() => setBetAmount(balance)}
+                onClick={() => setBetAmount(inrBalance)}
                 disabled={gameState === "playing"}
               >
-                All In (₹{balance.toLocaleString()})
+                All In (₹{inrBalance.toLocaleString()})
               </Button>
             </CardContent>
           </Card>

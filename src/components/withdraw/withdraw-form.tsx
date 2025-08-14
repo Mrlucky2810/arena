@@ -31,20 +31,20 @@ import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export function WithdrawForm() {
-    const { user, balance, updateBalance } = useAuth();
+    const { user, inrBalance, cryptoBalance, updateBalance } = useAuth();
     const { toast } = useToast();
 
     const inrSchema = z.object({
         accountHolderName: z.string().min(2, "Name is too short"),
         accountNumber: z.string().regex(/^\d{9,18}$/, "Invalid account number"),
         ifscCode: z.string().regex(/^[A-Z]{4}0[A-Z0-9]{6}$/, "Invalid IFSC code"),
-        amount: z.coerce.number().positive("Amount must be positive").max(balance, "Insufficient balance"),
+        amount: z.coerce.number().positive("Amount must be positive").max(inrBalance, "Insufficient balance"),
     });
 
     const cryptoSchema = z.object({
         walletAddress: z.string().min(26, "Invalid wallet address"),
         network: z.string({ required_error: "Please select a network." }),
-        amount: z.coerce.number().positive("Amount must be positive").max(balance, "Insufficient balance"),
+        amount: z.coerce.number().positive("Amount must be positive").max(cryptoBalance, "Insufficient balance"),
     });
 
     const inrForm = useForm<z.infer<typeof inrSchema>>({
@@ -67,12 +67,12 @@ export function WithdrawForm() {
 
     async function onInrSubmit(values: z.infer<typeof inrSchema>) {
         if (!user) return;
-        if (values.amount > balance) {
-            toast({ variant: "destructive", title: "Error", description: "Insufficient balance." });
+        if (values.amount > inrBalance) {
+            toast({ variant: "destructive", title: "Error", description: "Insufficient INR balance." });
             return;
         }
         try {
-            await updateBalance(user.uid, -values.amount);
+            await updateBalance(user.uid, -values.amount, 'inr');
             
             try {
                 await addDoc(collection(db, "withdrawals"), {
@@ -91,7 +91,7 @@ export function WithdrawForm() {
                 inrForm.reset();
             } catch (dbError) {
                  // Refund balance if db write fails
-                await updateBalance(user.uid, values.amount);
+                await updateBalance(user.uid, values.amount, 'inr');
                 throw dbError; // re-throw to be caught by outer catch
             }
         } catch (error) {
@@ -102,12 +102,12 @@ export function WithdrawForm() {
 
     async function onCryptoSubmit(values: z.infer<typeof cryptoSchema>) {
         if (!user) return;
-        if (values.amount > balance) {
-            toast({ variant: "destructive", title: "Error", description: "Insufficient balance." });
+        if (values.amount > cryptoBalance) {
+            toast({ variant: "destructive", title: "Error", description: "Insufficient Crypto balance." });
             return;
         }
          try {
-            await updateBalance(user.uid, -values.amount);
+            await updateBalance(user.uid, -values.amount, 'crypto');
 
             try {
                 await addDoc(collection(db, "withdrawals"), {
@@ -125,7 +125,7 @@ export function WithdrawForm() {
                 cryptoForm.reset();
             } catch (dbError) {
                 // Refund balance if db write fails
-                await updateBalance(user.uid, values.amount);
+                await updateBalance(user.uid, values.amount, 'crypto');
                 throw dbError;
             }
         } catch (error) {
@@ -194,7 +194,7 @@ export function WithdrawForm() {
                   name="amount"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Amount (Balance: ₹{balance.toLocaleString()})</FormLabel>
+                      <FormLabel>Amount (INR Balance: ₹{inrBalance.toLocaleString()})</FormLabel>
                       <FormControl>
                         <Input type="number" placeholder="Enter amount" {...field} />
                       </FormControl>
@@ -258,7 +258,7 @@ export function WithdrawForm() {
                   name="amount"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Amount (Balance: ₹{balance.toLocaleString()})</FormLabel>
+                      <FormLabel>Amount (Crypto Balance: ₹{cryptoBalance.toLocaleString()})</FormLabel>
                       <FormControl>
                         <Input type="number" placeholder="Enter amount" {...field} />
                       </FormControl>

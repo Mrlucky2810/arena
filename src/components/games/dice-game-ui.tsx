@@ -6,11 +6,13 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
-import { HelpCircle, Wallet, Crown, BarChart } from 'lucide-react';
+import { HelpCircle, Wallet, Crown, BarChart, Banknote, Bitcoin } from 'lucide-react';
 import { useAuth } from '@/context/auth-context';
 import { useToast } from '@/hooks/use-toast';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import { Label } from '../ui/label';
 
 const DiceFace = ({ number }: { number: number | null }) => {
     const dots = Array.from({ length: number || 0 });
@@ -41,15 +43,19 @@ const DiceFace = ({ number }: { number: number | null }) => {
     );
   };
   
+type WalletType = 'inr' | 'crypto';
 
 export function DiceGameUI() {
-    const { user, balance, updateBalance } = useAuth();
+    const { user, inrBalance, cryptoBalance, updateBalance } = useAuth();
     const { toast } = useToast();
     const [selectedNumber, setSelectedNumber] = useState<number>(1);
     const [betAmount, setBetAmount] = useState<number>(10);
     const [isRolling, setIsRolling] = useState(false);
     const [diceResult, setDiceResult] = useState<number | null>(null);
     const [gameResult, setGameResult] = useState<'win' | 'lose' | null>(null);
+    const [wallet, setWallet] = useState<WalletType>('inr');
+
+    const selectedBalance = wallet === 'inr' ? inrBalance : cryptoBalance;
 
     const logGameResult = async (payout: number, result: number) => {
         if (!user) return;
@@ -62,6 +68,7 @@ export function DiceGameUI() {
                 diceResult: result,
                 outcome: payout >= 0 ? 'win' : 'loss',
                 payout: payout,
+                wallet: wallet,
                 createdAt: serverTimestamp(),
             });
         } catch (error) {
@@ -75,8 +82,8 @@ export function DiceGameUI() {
             toast({ variant: "destructive", title: "Invalid Amount", description: "Bet amount must be positive." });
             return;
         }
-        if (betAmount > balance) {
-            toast({ variant: "destructive", title: "Insufficient Balance", description: "You don't have enough funds to place this bet." });
+        if (betAmount > selectedBalance) {
+            toast({ variant: "destructive", title: "Insufficient Balance", description: `You don't have enough funds in your ${wallet.toUpperCase()} wallet.` });
             return;
         }
 
@@ -85,7 +92,7 @@ export function DiceGameUI() {
         setDiceResult(null);
         
         try {
-            await updateBalance(user.uid, -betAmount);
+            await updateBalance(user.uid, -betAmount, wallet);
         } catch (error) {
             toast({ variant: "destructive", title: "Error", description: "Could not place your bet. Please try again." });
             setIsRolling(false);
@@ -105,8 +112,8 @@ export function DiceGameUI() {
             if (result === selectedNumber) {
                 const winAmount = betAmount * 5;
                 const totalReturn = winAmount + betAmount; // winnings + stake back
-                updateBalance(user.uid, totalReturn).then(() => {
-                    toast({ title: "You Won!", description: `+₹${winAmount} added to your balance.` });
+                updateBalance(user.uid, totalReturn, wallet).then(() => {
+                    toast({ title: "You Won!", description: `+₹${winAmount} added to your ${wallet.toUpperCase()} balance.` });
                 }).catch(() => {
                     toast({ variant: "destructive", title: "Error", description: "There was an issue updating your balance."});
                 });
@@ -143,7 +150,7 @@ export function DiceGameUI() {
                                     </div>
                                 )}
                             </div>
-                            <Button size="lg" className="w-full h-14 text-lg" onClick={rollDice} disabled={isRolling || betAmount <= 0 || betAmount > balance}>
+                            <Button size="lg" className="w-full h-14 text-lg" onClick={rollDice} disabled={isRolling || betAmount <= 0 || betAmount > selectedBalance}>
                                 {isRolling ? 'Rolling...' : `Roll Dice (Bet ₹${betAmount})`}
                             </Button>
                         </CardContent>
@@ -178,6 +185,20 @@ export function DiceGameUI() {
                             <Wallet className="w-5 h-5 text-muted-foreground"/>
                         </CardHeader>
                         <CardContent className="space-y-4">
+                            <RadioGroup value={wallet} onValueChange={(v) => setWallet(v as WalletType)} className="grid grid-cols-2 gap-4" disabled={isRolling}>
+                                <Label htmlFor="inr-wallet" className={cn("flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground", wallet === 'inr' && "border-primary")}>
+                                    <RadioGroupItem value="inr" id="inr-wallet" className="sr-only"/>
+                                    <Banknote className="mb-3 h-6 w-6" />
+                                    INR Wallet
+                                    <span className="block font-normal text-sm text-muted-foreground">₹{inrBalance.toLocaleString()}</span>
+                                </Label>
+                                <Label htmlFor="crypto-wallet" className={cn("flex flex-col items-center justify-between rounded-md border-2 border-muted bg-popover p-4 hover:bg-accent hover:text-accent-foreground", wallet === 'crypto' && "border-primary")}>
+                                     <RadioGroupItem value="crypto" id="crypto-wallet" className="sr-only"/>
+                                    <Bitcoin className="mb-3 h-6 w-6" />
+                                    Crypto Wallet
+                                     <span className="block font-normal text-sm text-muted-foreground">₹{cryptoBalance.toLocaleString()}</span>
+                                </Label>
+                            </RadioGroup>
                             <Input
                                 type="number"
                                 value={betAmount}
@@ -192,8 +213,8 @@ export function DiceGameUI() {
                                 </Button>
                                 ))}
                             </div>
-                            <Button variant="outline" className="w-full" onClick={() => setBetAmount(balance)} disabled={isRolling}>
-                                All In (₹{balance.toLocaleString()})
+                            <Button variant="outline" className="w-full" onClick={() => setBetAmount(selectedBalance)} disabled={isRolling}>
+                                All In (₹{selectedBalance.toLocaleString()})
                             </Button>
                         </CardContent>
                     </Card>
@@ -203,10 +224,6 @@ export function DiceGameUI() {
                             <BarChart className="w-5 h-5 text-muted-foreground"/>
                         </CardHeader>
                         <CardContent className="space-y-3 pt-4 text-sm">
-                            <div className="flex justify-between items-center">
-                                <span className="text-muted-foreground">Your Balance</span>
-                                <span className="font-semibold">₹{balance.toLocaleString()}</span>
-                            </div>
                              <div className="flex justify-between items-center">
                                 <span className="text-muted-foreground">Selected Number</span>
                                 <span className="font-semibold text-primary">{selectedNumber}</span>

@@ -17,7 +17,10 @@ import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
 
 export function AppHeader() {
-    const { user, logout, balance, userData } = useAuth();
+    const { user, logout, inrBalance, cryptoBalance, userData } = useAuth();
+    const totalBalance = inrBalance + cryptoBalance;
+    const isAdmin = userData?.role === 'admin';
+
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card px-4 md:px-6">
       <SidebarTrigger className="md:hidden" />
@@ -32,7 +35,7 @@ export function AppHeader() {
         </div>
       </div>
       <div className="flex items-center gap-2 sm:gap-4">
-        {user && (
+        {user && !isAdmin && (
             <Button variant="ghost" size="icon" className="rounded-full">
                 <Bell className="h-5 w-5" />
                 <span className="sr-only">Toggle notifications</span>
@@ -41,9 +44,11 @@ export function AppHeader() {
         <div className="flex items-center gap-2">
             {user ? (
                  <>
-                    <span className="font-semibold text-sm hidden sm:inline">
-                        ₹{balance.toLocaleString()}
-                    </span>
+                    {!isAdmin && (
+                        <span className="font-semibold text-sm hidden sm:inline">
+                            ₹{totalBalance.toLocaleString()}
+                        </span>
+                    )}
                     <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="secondary" size="icon" className="rounded-full">
@@ -55,14 +60,20 @@ export function AppHeader() {
                         <DropdownMenuLabel>Hi, {userData?.name}</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem asChild>
-                            <Link href="/profile">Profile</Link>
+                            <Link href={isAdmin ? "/admin/dashboard" : "/profile"}>
+                              {isAdmin ? 'Dashboard' : 'Profile'}
+                            </Link>
                         </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                            <Link href="/deposit">Deposit</Link>
-                        </DropdownMenuItem>
-                        <DropdownMenuItem asChild>
-                            <Link href="/withdraw">Withdraw</Link>
-                        </DropdownMenuItem>
+                        {!isAdmin && (
+                            <>
+                                <DropdownMenuItem asChild>
+                                    <Link href="/deposit">Deposit</Link>
+                                </DropdownMenuItem>
+                                <DropdownMenuItem asChild>
+                                    <Link href="/withdraw">Withdraw</Link>
+                                </DropdownMenuItem>
+                            </>
+                        )}
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={logout}>Logout</DropdownMenuItem>
                     </DropdownMenuContent>

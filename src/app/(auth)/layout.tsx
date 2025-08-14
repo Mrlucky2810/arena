@@ -1,4 +1,7 @@
 import React from 'react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
+import { ArrowLeft } from 'lucide-react';
 
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -6,6 +9,12 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
        <div className="absolute inset-0 z-0 bg-gradient-to-br from-primary/10 via-background to-background"></div>
        <div className="absolute -top-1/4 -left-1/4 h-1/2 w-1/2 rounded-full bg-accent/10 blur-3xl"></div>
        <div className="absolute -bottom-1/4 -right-1/4 h-1/2 w-1/2 rounded-full bg-primary/10 blur-3xl"></div>
+        <Button asChild variant="ghost" className="absolute top-4 left-4 z-20">
+            <Link href="/">
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Home
+            </Link>
+        </Button>
       <div className="container relative z-10 flex items-center justify-center">
         {children}
       </div>

@@ -3,13 +3,12 @@
 
 import { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, doc, updateDoc, getDoc, orderBy, limit } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, getDoc, orderBy, limit, increment } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { useAuth } from '@/context/auth-context';
 import { CheckCircle, XCircle } from 'lucide-react';
 
 interface WithdrawalRequest {
@@ -27,7 +26,6 @@ export function WithdrawalRequests() {
     const [requests, setRequests] = useState<WithdrawalRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const { toast } = useToast();
-    const { updateBalance } = useAuth();
 
     const fetchRequests = async () => {
         setLoading(true);
@@ -67,7 +65,9 @@ export function WithdrawalRequests() {
 
             if (newStatus === 'rejected') {
                 // If rejected, refund the amount to the user's balance
-                await updateBalance(request.userId, request.amount, 'add');
+                const userDocRef = doc(db, 'users', request.userId);
+                const balanceField = request.type === 'inr' ? 'inrBalance' : 'cryptoBalance';
+                await updateDoc(userDocRef, { [balanceField]: increment(request.amount) });
             }
             // If approved, the amount is already deducted when the request was made.
             

@@ -3,7 +3,7 @@
 
 import { StatCard } from "@/components/dashboard/stat-card";
 import { WelcomeHeader } from "@/components/dashboard/welcome-header";
-import { trendingGames, gameCategories } from "@/lib/mock-data";
+import { trendingGames, allGames } from "@/lib/mock-data";
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -30,9 +30,11 @@ import { db } from "@/lib/firebase";
 import { GuestDashboard } from "@/components/dashboard/guest-dashboard";
 
 export default function DashboardPage() {
-    const { user, userData, balance, loading } = useAuth();
+    const { user, userData, loading, inrBalance, cryptoBalance } = useAuth();
     const [pnl, setPnl] = useState(0);
     const [referralEarnings, setReferralEarnings] = useState(0);
+
+    const totalBalance = inrBalance + cryptoBalance;
 
     useEffect(() => {
         if (user) {
@@ -86,8 +88,8 @@ export default function DashboardPage() {
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         <StatCard
-          title="Current Balance"
-          value={user ? `₹${balance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "Log in to see"}
+          title="Total Balance"
+          value={user ? `₹${totalBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "Log in to see"}
           icon={Wallet}
         />
         <StatCard
@@ -134,20 +136,15 @@ export default function DashboardPage() {
 
       <div className="grid gap-8 lg:grid-cols-1">
         <Card>
-          <CardHeader>
-            <CardTitle>Casino</CardTitle>
+          <CardHeader className="flex items-center justify-between">
+            <CardTitle>All Games</CardTitle>
+            <Button asChild variant="ghost">
+                <Link href="/games">View All</Link>
+            </Button>
           </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-2">
-            {gameCategories.casino.map((game) => (
-              <div key={game.name} className="flex items-center justify-between p-3 rounded-lg bg-muted/50">
-                <div>
-                  <p className="font-semibold">{game.name}</p>
-                  <p className="text-sm text-muted-foreground">{game.livePlayers.toLocaleString()} players</p>
-                </div>
-                <Button size="sm" asChild>
-                  <Link href={game.href}>Play</Link>
-                </Button>
-              </div>
+          <CardContent className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+            {allGames.slice(0, 4).map((game) => (
+                <GameCard key={game.name} game={game} />
             ))}
           </CardContent>
         </Card>
