@@ -86,8 +86,13 @@ export const CoinFlipGameUI = () => {
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        <div className="lg:col-span-2">
-            <Card className="text-center overflow-hidden">
+        <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5 }}
+            className="lg:col-span-2"
+        >
+            <Card className="text-center overflow-hidden bg-card/80 backdrop-blur-sm border-white/5">
                 <CardHeader>
                     <CardTitle>Flip the Coin</CardTitle>
                 </CardHeader>
@@ -99,7 +104,7 @@ export const CoinFlipGameUI = () => {
                     coinResult === 'tails' ? 'bg-slate-300 text-gray-800 border-slate-400' :
                     'bg-primary text-white border-primary/50'
                   )}
-                  animate={isFlipping ? { rotateY: [0, 180, 360, 540, 720, 900] } : {}}
+                  animate={isFlipping ? { rotateY: [0, 180, 360, 540, 720, 900], scale: [1, 1.2, 1, 1.2, 1] } : {}}
                   transition={{ duration: 2, ease: "easeOut" }}
                 >
                   {isFlipping ? (
@@ -133,107 +138,118 @@ export const CoinFlipGameUI = () => {
                     size="lg"
                     onClick={flipCoin}
                     disabled={isFlipping || betAmount > inrBalance}
-                    className="w-full h-14 text-lg"
+                    className={cn("w-full h-14 text-lg shadow-lg hover:shadow-primary/50 transition-shadow", gameResult === 'win' && 'pulse-win')}
                 >
                     {isFlipping ? 'Flipping...' : 'Flip Coin'}
                 </Button>
                 </CardContent>
             </Card>
-        </div>
+        </motion.div>
 
         <div className="space-y-6">
-            <Card>
-              <CardHeader><CardTitle>Choose Your Side</CardTitle></CardHeader>
-              <CardContent className="grid grid-cols-2 gap-4">
-                <button
-                  onClick={() => setSelectedSide('heads')}
-                  className={cn('p-4 rounded-xl border-2 transition-all duration-300',
-                    selectedSide === 'heads'
-                      ? 'border-primary bg-primary/20 shadow-lg'
-                      : 'border-border bg-muted/50 hover:border-primary/50'
-                  )}
-                  disabled={isFlipping}
-                >
-                    <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-amber-400 flex items-center justify-center text-2xl font-bold text-black">H</div>
-                    <h4 className="font-semibold text-foreground">HEADS</h4>
-                </button>
-
-                <button
-                  onClick={() => setSelectedSide('tails')}
-                  className={cn('p-4 rounded-xl border-2 transition-all duration-300',
-                    selectedSide === 'tails'
-                      ? 'border-primary bg-primary/20 shadow-lg'
-                      : 'border-border bg-muted/50 hover:border-primary/50'
-                  )}
-                  disabled={isFlipping}
-                >
-                    <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-slate-300 flex items-center justify-center text-2xl font-bold text-gray-800">T</div>
-                    <h4 className="font-semibold text-foreground">TAILS</h4>
-                </button>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardHeader><CardTitle>Bet Amount</CardTitle></CardHeader>
-              <CardContent className="space-y-4">
-                  <Input
-                    type="number"
-                    min="1"
-                    max={inrBalance}
-                    value={betAmount}
-                    onChange={(e) => setBetAmount(Number(e.target.value))}
-                    className="text-center text-xl font-bold h-12"
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
+                <Card className="bg-card/80 backdrop-blur-sm border-white/5">
+                <CardHeader><CardTitle>Choose Your Side</CardTitle></CardHeader>
+                <CardContent className="grid grid-cols-2 gap-4">
+                    <button
+                    onClick={() => setSelectedSide('heads')}
+                    className={cn('p-4 rounded-xl border-2 transition-all duration-300',
+                        selectedSide === 'heads'
+                        ? 'border-primary bg-primary/20 shadow-glow'
+                        : 'border-border bg-muted/50 hover:border-primary/50'
+                    )}
                     disabled={isFlipping}
-                  />
-                <div className="grid grid-cols-2 gap-2">
-                  {[10, 25, 50, 100].map((amount) => (
-                    <Button
-                      key={amount}
-                      variant="outline"
-                      onClick={() => setBetAmount(amount)}
-                      disabled={isFlipping || amount > inrBalance}
                     >
-                      ₹{amount}
-                    </Button>
-                  ))}
-                </div>
-                <Button
-                  variant="secondary"
-                  onClick={() => setBetAmount(inrBalance)}
-                  disabled={isFlipping}
-                  className="w-full"
-                >
-                  All In (₹{inrBalance.toLocaleString()})
-                </Button>
-              </CardContent>
-            </Card>
-            <Card>
-                <CardHeader className="flex-row items-center justify-between pb-2">
-                    <CardTitle className="text-lg">Game Info</CardTitle>
-                    <Wallet className="w-5 h-5 text-muted-foreground"/>
-                </CardHeader>
-                <CardContent className="space-y-3 pt-4 text-sm">
-                     <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">Your Balance</span>
-                        <span className="font-semibold text-primary">₹{inrBalance.toLocaleString()}</span>
-                    </div>
-                     <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">Potential Win</span>
-                        <span className="font-semibold text-emerald-500">₹{potentialWin.toLocaleString()}</span>
-                    </div>
-                     <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">Win Chance</span>
-                        <span className="font-semibold">50%</span>
-                    </div>
-                     <div className="flex justify-between items-center">
-                        <span className="text-muted-foreground">Multiplier</span>
-                        <span className="font-semibold">1.90x</span>
-                    </div>
+                        <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-amber-400 flex items-center justify-center text-2xl font-bold text-black">H</div>
+                        <h4 className="font-semibold text-foreground">HEADS</h4>
+                    </button>
+
+                    <button
+                    onClick={() => setSelectedSide('tails')}
+                    className={cn('p-4 rounded-xl border-2 transition-all duration-300',
+                        selectedSide === 'tails'
+                        ? 'border-primary bg-primary/20 shadow-glow'
+                        : 'border-border bg-muted/50 hover:border-primary/50'
+                    )}
+                    disabled={isFlipping}
+                    >
+                        <div className="w-16 h-16 mx-auto mb-3 rounded-full bg-slate-300 flex items-center justify-center text-2xl font-bold text-gray-800">T</div>
+                        <h4 className="font-semibold text-foreground">TAILS</h4>
+                    </button>
                 </CardContent>
-            </Card>
+                </Card>
+            </motion.div>
+
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
+                <Card className="bg-card/80 backdrop-blur-sm border-white/5">
+                <CardHeader><CardTitle>Bet Amount</CardTitle></CardHeader>
+                <CardContent className="space-y-4">
+                    <Input
+                        type="number"
+                        min="1"
+                        max={inrBalance}
+                        value={betAmount}
+                        onChange={(e) => setBetAmount(Number(e.target.value))}
+                        className="text-center text-xl font-bold h-12 bg-input/50"
+                        disabled={isFlipping}
+                    />
+                    <div className="grid grid-cols-2 gap-2">
+                    {[10, 25, 50, 100].map((amount) => (
+                        <Button
+                        key={amount}
+                        variant="outline"
+                        onClick={() => setBetAmount(amount)}
+                        disabled={isFlipping || amount > inrBalance}
+                        >
+                        ₹{amount}
+                        </Button>
+                    ))}
+                    </div>
+                    <Button
+                    variant="secondary"
+                    onClick={() => setBetAmount(inrBalance)}
+                    disabled={isFlipping}
+                    className="w-full"
+                    >
+                    All In (₹{inrBalance.toLocaleString()})
+                    </Button>
+                </CardContent>
+                </Card>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }}>
+                <Card className="bg-card/80 backdrop-blur-sm border-white/5">
+                    <CardHeader className="flex-row items-center justify-between pb-2">
+                        <CardTitle className="text-lg">Game Info</CardTitle>
+                        <Wallet className="w-5 h-5 text-muted-foreground"/>
+                    </CardHeader>
+                    <CardContent className="space-y-3 pt-4 text-sm">
+                        <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">Your Balance</span>
+                            <span className="font-semibold text-primary">₹{inrBalance.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">Potential Win</span>
+                            <span className="font-semibold text-emerald-500">₹{potentialWin.toLocaleString()}</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">Win Chance</span>
+                            <span className="font-semibold">50%</span>
+                        </div>
+                        <div className="flex justify-between items-center">
+                            <span className="text-muted-foreground">Multiplier</span>
+                            <span className="font-semibold">1.90x</span>
+                        </div>
+                    </CardContent>
+                </Card>
+            </motion.div>
         </div>
-         <div className="lg:col-span-3">
-            <Card>
+         <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.4 }}
+            className="lg:col-span-3"
+        >
+            <Card className="bg-card/80 backdrop-blur-sm border-white/5">
                 <CardHeader>
                     <CardTitle className="flex items-center gap-2">
                         <HelpCircle className="w-5 h-5"/>
@@ -258,7 +274,7 @@ export const CoinFlipGameUI = () => {
                     </div>
                 </CardContent>
             </Card>
-        </div>
+        </motion.div>
     </div>
   );
 };

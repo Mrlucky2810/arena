@@ -110,7 +110,7 @@ export default function DashboardPage() {
         <Carousel opts={{ align: "start", loop: true }}>
           <CarouselContent>
             {trendingGames.map((game) => (
-              <CarouselItem key={game.name} className="md:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+              <CarouselItem key={game.name} className="basis-full md:basis-1/2 xl:basis-1/3">
                 <GameCard game={game} />
               </CarouselItem>
             ))}
@@ -136,7 +136,7 @@ export default function DashboardPage() {
 
       <div className="grid gap-8 lg:grid-cols-1">
         <Card>
-          <CardHeader className="flex items-center justify-between">
+          <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>All Games</CardTitle>
             <Button asChild variant="ghost">
                 <Link href="/games">View All</Link>

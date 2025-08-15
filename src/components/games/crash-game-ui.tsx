@@ -12,6 +12,7 @@ import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
+import { motion } from "framer-motion";
 
 type GameState = "ready" | "playing" | "crashed" | "cashed_out";
 
@@ -69,7 +70,7 @@ export function CrashGameUI() {
     }, 80);
 
     return () => clearInterval(interval);
-  }, [gameState, crashPoint, betAmount, user, logGameResult]);
+  }, [gameState, crashPoint, betAmount, user]); // Removed logGameResult from dependencies
 
   useEffect(() => {
     const cleanup = handleGameLogic();
@@ -125,14 +126,14 @@ export function CrashGameUI() {
     switch (gameState) {
       case 'playing':
         return (
-          <Button onClick={handleCashOut} size="lg" className="w-full h-16 text-lg bg-emerald-600 hover:bg-emerald-700">
+          <Button onClick={handleCashOut} size="lg" className="w-full h-16 text-lg bg-emerald-600 hover:bg-emerald-700 shadow-lg hover:shadow-emerald-500/50 transition-all">
             <TrendingUp className="mr-2" />
             Cash Out (₹{potentialWin.toFixed(2)})
           </Button>
         );
       case 'cashed_out':
         return (
-          <Button onClick={handleStartFlight} size="lg" className="w-full h-16 text-lg">
+          <Button onClick={handleStartFlight} size="lg" className="w-full h-16 text-lg shadow-lg hover:shadow-primary/50 transition-all">
             <Play className="mr-2" />
             Place Next Bet
           </Button>
@@ -147,7 +148,7 @@ export function CrashGameUI() {
       case 'ready':
       default:
         return (
-          <Button onClick={handleStartFlight} size="lg" className="w-full h-16 text-lg" disabled={betAmount <= 0 || betAmount > inrBalance}>
+          <Button onClick={handleStartFlight} size="lg" className="w-full h-16 text-lg shadow-lg hover:shadow-primary/50 transition-all" disabled={betAmount <= 0 || betAmount > inrBalance}>
             <Play className="mr-2" />
             Place Bet (₹{betAmount})
           </Button>
@@ -184,31 +185,44 @@ export function CrashGameUI() {
   return (
     <div className="space-y-8">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
-        <div className="lg:col-span-2 space-y-6 lg:order-1">
-          <Card className="bg-card/50 text-center aspect-[16/10] flex flex-col relative overflow-hidden">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="lg:col-span-2 space-y-6 lg:order-1">
+          <Card className="bg-card/80 backdrop-blur-sm border-white/5 text-center aspect-[16/10] flex flex-col relative overflow-hidden">
             <CardHeader className="z-10">
               <CardTitle className="text-muted-foreground">{getFlightStatusText()}</CardTitle>
             </CardHeader>
             <CardContent className="flex flex-col items-center justify-center gap-4 p-4 sm:p-8 flex-1 z-10">
-              <p className={cn(
+              <motion.p 
+                key={gameState}
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className={cn(
                 "text-5xl sm:text-7xl lg:text-8xl font-bold transition-colors duration-300",
                 gameState === "crashed" ? "text-destructive" : gameState === "cashed_out" ? "text-emerald-500" : "text-foreground"
               )}>
                 {multiplier.toFixed(2)}x
-              </p>
+              </motion.p>
             </CardContent>
             <div className="absolute inset-0 w-full h-full z-0">
-               <Plane
+               <motion.div
                   className={cn(
-                    "w-12 h-12 sm:w-16 sm:h-16 text-primary absolute",
+                    "absolute",
                     gameState === 'playing' && 'animate-pulse'
                   )}
-                  style={planePosition}
-                />
+                  style={{
+                    width: '4rem',
+                    height: '4rem',
+                    ...planePosition
+                  }}
+                >
+                 <Plane
+                    className="w-full h-full text-primary"
+                  />
+               </motion.div>
               {gameState === "crashed" && (
                 <div className="absolute w-full h-full flex items-center justify-center">
-                  <Zap className="w-24 h-24 text-destructive animate-ping" />
-                  <Zap className="w-24 h-24 text-destructive/50 animate-ping" style={{animationDelay: '0.2s'}} />
+                  <motion.div initial={{scale: 0}} animate={{scale: 1}} transition={{delay: 0.1, type: "spring"}}>
+                    <Zap className="w-24 h-24 text-destructive" />
+                  </motion.div>
                 </div>
               )}
             </div>
@@ -216,110 +230,114 @@ export function CrashGameUI() {
            <div className="w-full p-0">
                 {getActionButton()}
             </div>
-        </div>
+        </motion.div>
 
         <div className="lg:col-span-1 space-y-6 lg:order-2">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Wallet className="w-5 h-5"/>
-                <span>Bet Amount</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <Input
-                type="number"
-                value={betAmount}
-                onChange={(e) => setBetAmount(Number(e.target.value))}
-                className="text-center text-lg font-bold h-12"
-                disabled={gameState === "playing"}
-              />
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                {[10, 25, 50, 100].map((amount) => (
-                  <Button
-                    key={amount}
-                    variant={betAmount === amount ? "default" : "outline"}
-                    onClick={() => setBetAmount(amount)}
-                    disabled={gameState === "playing"}
-                  >
-                    ₹{amount}
-                  </Button>
-                ))}
-              </div>
-              <Button
-                variant="secondary"
-                className="w-full"
-                onClick={() => setBetAmount(inrBalance)}
-                disabled={gameState === "playing"}
-              >
-                All In (₹{inrBalance.toLocaleString()})
-              </Button>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <History className="w-5 h-5"/>
-                <span>Recent Crashes</span>
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="flex flex-wrap gap-2">
-              {recentCrashes.map((crash, index) => (
-                <div
-                  key={index}
-                  className={cn(
-                    "text-xs font-bold py-1 px-2 rounded-full",
-                    crash.multiplier < 2
-                      ? "bg-red-500/20 text-red-400"
-                      : "bg-emerald-500/20 text-emerald-400"
-                  )}
-                >
-                  {crash.multiplier.toFixed(2)}x
-                </div>
-              ))}
-            </CardContent>
-          </Card>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
+                <Card className="bg-card/80 backdrop-blur-sm border-white/5">
+                    <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <Wallet className="w-5 h-5"/>
+                        <span>Bet Amount</span>
+                    </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                    <Input
+                        type="number"
+                        value={betAmount}
+                        onChange={(e) => setBetAmount(Number(e.target.value))}
+                        className="text-center text-lg font-bold h-12 bg-input/50"
+                        disabled={gameState === "playing"}
+                    />
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                        {[10, 25, 50, 100].map((amount) => (
+                        <Button
+                            key={amount}
+                            variant={betAmount === amount ? "default" : "outline"}
+                            onClick={() => setBetAmount(amount)}
+                            disabled={gameState === "playing"}
+                        >
+                            ₹{amount}
+                        </Button>
+                        ))}
+                    </div>
+                    <Button
+                        variant="secondary"
+                        className="w-full"
+                        onClick={() => setBetAmount(inrBalance)}
+                        disabled={gameState === "playing"}
+                    >
+                        All In (₹{inrBalance.toLocaleString()})
+                    </Button>
+                    </CardContent>
+                </Card>
+            </motion.div>
+            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
+                <Card className="bg-card/80 backdrop-blur-sm border-white/5">
+                    <CardHeader>
+                    <CardTitle className="flex items-center gap-2">
+                        <History className="w-5 h-5"/>
+                        <span>Recent Crashes</span>
+                    </CardTitle>
+                    </CardHeader>
+                    <CardContent className="flex flex-wrap gap-2">
+                    {recentCrashes.map((crash, index) => (
+                        <div
+                        key={index}
+                        className={cn(
+                            "text-xs font-bold py-1 px-2 rounded-full",
+                            crash.multiplier < 2
+                            ? "bg-red-500/20 text-red-400"
+                            : "bg-emerald-500/20 text-emerald-400"
+                        )}
+                        >
+                        {crash.multiplier.toFixed(2)}x
+                        </div>
+                    ))}
+                    </CardContent>
+                </Card>
+            </motion.div>
         </div>
       </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <HelpCircle className="w-5 h-5"/>
-            <span>How to Play</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="grid md:grid-cols-3 gap-6 text-center">
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-lg">
-              1
+      <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }}>
+        <Card className="bg-card/80 backdrop-blur-sm border-white/5">
+            <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+                <HelpCircle className="w-5 h-5"/>
+                <span>How to Play</span>
+            </CardTitle>
+            </CardHeader>
+            <CardContent className="grid md:grid-cols-3 gap-6 text-center">
+            <div className="flex flex-col items-center gap-2">
+                <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-lg">
+                1
+                </div>
+                <h3 className="font-semibold">Place Your Bet</h3>
+                <p className="text-sm text-muted-foreground">
+                Set your bet amount and click 'Place Bet'.
+                </p>
             </div>
-            <h3 className="font-semibold">Place Your Bet</h3>
-            <p className="text-sm text-muted-foreground">
-              Set your bet amount and click 'Place Bet'.
-            </p>
-          </div>
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-lg">
-              2
+            <div className="flex flex-col items-center gap-2">
+                <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-lg">
+                2
+                </div>
+                <h3 className="font-semibold">Watch the Multiplier</h3>
+                <p className="text-sm text-muted-foreground">
+                The plane takes off and the multiplier starts growing.
+                </p>
             </div>
-            <h3 className="font-semibold">Watch the Multiplier</h3>
-            <p className="text-sm text-muted-foreground">
-              The plane takes off and the multiplier starts growing.
-            </p>
-          </div>
-          <div className="flex flex-col items-center gap-2">
-            <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-lg">
-              3
+            <div className="flex flex-col items-center gap-2">
+                <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-lg">
+                3
+                </div>
+                <h3 className="font-semibold">Cash Out In Time</h3>
+                <p className="text-sm text-muted-foreground">
+                Click 'Cash Out' before the plane crashes to win!
+                </p>
             </div>
-            <h3 className="font-semibold">Cash Out In Time</h3>
-            <p className="text-sm text-muted-foreground">
-              Click 'Cash Out' before the plane crashes to win!
-            </p>
-          </div>
-        </CardContent>
-      </Card>
+            </CardContent>
+        </Card>
+      </motion.div>
     </div>
   );
 }

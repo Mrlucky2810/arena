@@ -10,6 +10,8 @@ import { AppSidebar } from '@/components/layout/app-sidebar';
 import { SidebarInset, SidebarProvider } from '@/components/ui/sidebar';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { cn } from '@/lib/utils';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -51,22 +53,51 @@ function AppContent({ children }: { children: React.ReactNode }) {
         );
     }
 
-    if (isAuthRoute || isAdminRoute || isRegisterAdminRoute) {
-        return <>{children}</>;
+    const pageVariants = {
+        initial: { opacity: 0, y: 20 },
+        in: { opacity: 1, y: 0 },
+        out: { opacity: 0, y: -20 },
+    };
+
+    const pageTransition = {
+        type: 'tween',
+        ease: 'anticipate',
+        duration: 0.5,
+    };
+
+    const mainContent = (
+      <AnimatePresence mode="wait">
+        <motion.div
+          key={pathname}
+          initial="initial"
+          animate="in"
+          exit="out"
+          variants={pageVariants}
+          transition={pageTransition}
+        >
+          {children}
+        </motion.div>
+      </AnimatePresence>
+    );
+
+    if (isAuthRoute || isRegisterAdminRoute) {
+        return mainContent;
     }
+    
+    const LayoutWrapper = isAdminRoute ? React.Fragment : SidebarProvider;
 
     return (
-        <SidebarProvider>
+        <LayoutWrapper>
             <AppSidebar />
             <SidebarInset>
                 <div className="flex flex-col h-full">
                     <AppHeader />
-                    <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 bg-background">
-                        {children}
+                    <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+                        {mainContent}
                     </main>
                 </div>
             </SidebarInset>
-        </SidebarProvider>
+        </LayoutWrapper>
     )
 }
 
@@ -76,15 +107,31 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={`dark ${inter.variable}`}>
+    <html lang="en" className={cn("dark", inter.variable)}>
       <head>
         <title>Apex Arena</title>
         <meta name="description" content="Your Gateway to Wins" />
         <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
       <body className="font-body antialiased bg-background text-foreground">
+        <div className="absolute inset-0 -z-10 h-full w-full bg-gradient-to-br from-primary/10 via-background to-accent/10 opacity-50 animate-gradient-xy" style={{backgroundSize: '400% 400%'}}/>
+        <style jsx>{`
+            @keyframes gradient-xy {
+                0%, 100% {
+                    background-position: 0% 50%;
+                }
+                50% {
+                    background-position: 100% 50%;
+                }
+            }
+            .animate-gradient-xy {
+                animation: gradient-xy 15s ease infinite;
+            }
+        `}</style>
         <AuthProvider>
-            <AppContent>{children}</AppContent>
+            <SidebarProvider>
+              <AppContent>{children}</AppContent>
+            </SidebarProvider>
             <Toaster />
         </AuthProvider>
       </body>

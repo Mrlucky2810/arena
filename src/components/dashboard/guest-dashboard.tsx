@@ -51,8 +51,8 @@ export function GuestDashboard() {
                 </div>
                 <div className="grid grid-cols-2 gap-4">
                     <Link href="/games/color-prediction">
-                        <Card className="relative group overflow-hidden rounded-lg">
-                             <Image src="https://placehold.co/400/1E40AF/FFFFFF" alt="Casino" width={400} height={400} className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105" data-ai-hint="casino scene" />
+                        <Card className="relative group overflow-hidden rounded-lg aspect-square">
+                             <Image src="/casino.jpg" alt="Casino" width={400} height={400} className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105" data-ai-hint="casino scene" />
                              <div className="absolute inset-0 bg-black/40" />
                              <div className="absolute bottom-0 left-0 p-4 text-white">
                                 <div className="flex items-center gap-2">
@@ -67,8 +67,8 @@ export function GuestDashboard() {
                         </Card>
                     </Link>
                      <Link href="/sports">
-                        <Card className="relative group overflow-hidden rounded-lg">
-                             <Image src="https://placehold.co/400/10B981/FFFFFF" alt="Sports" width={400} height={400} className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105" data-ai-hint="sports athletes" />
+                        <Card className="relative group overflow-hidden rounded-lg aspect-square">
+                             <Image src="/sports.jpg" alt="Sports" width={400} height={400} className="object-cover w-full h-full transition-transform duration-300 group-hover:scale-105" data-ai-hint="sports athletes" />
                              <div className="absolute inset-0 bg-black/40" />
                              <div className="absolute bottom-0 left-0 p-4 text-white">
                                 <div className="flex items-center gap-2">
@@ -90,7 +90,7 @@ export function GuestDashboard() {
                 <Carousel opts={{ align: "start", loop: true }}>
                 <CarouselContent>
                     {trendingGames.map((game) => (
-                    <CarouselItem key={game.name} className="basis-1/2 sm:basis-1/3 md:basis-1/4 lg:basis-1/5 xl:basis-1/6">
+                    <CarouselItem key={game.name} className="basis-full sm:basis-1/2">
                         <GameCard game={game} />
                     </CarouselItem>
                     ))}
