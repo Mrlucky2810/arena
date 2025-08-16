@@ -2,10 +2,11 @@
 "use client";
 
 import { useAuth } from "@/context/auth-context";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import { Alert, AlertDescription, AlertTitle } from "../ui/alert";
 import { Terminal } from "lucide-react";
+import { SpinWheelGameUI } from "./spin-wheel-game-ui";
 
 export function SpinWheelGame() {
   const { user } = useAuth();
@@ -26,14 +27,5 @@ export function SpinWheelGame() {
     );
   }
 
-  return (
-    <Card>
-      <CardHeader>
-        <CardTitle>Game Interface</CardTitle>
-      </CardHeader>
-      <CardContent>
-        <p className="text-muted-foreground">Spin wheel game will be implemented here.</p>
-      </CardContent>
-    </Card>
-  );
+  return <SpinWheelGameUI />;
 }

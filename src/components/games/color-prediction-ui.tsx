@@ -26,7 +26,7 @@ import { useToast } from "@/hooks/use-toast";
 const BETTING_DURATION = 30;
 
 export function ColorPredictionUI() {
-  const { user, balance, updateBalance } = useAuth();
+  const { user, inrBalance, updateBalance } = useAuth();
   const { toast } = useToast();
   const [timeLeft, setTimeLeft] = useState(BETTING_DURATION);
   const [betAmount, setBetAmount] = useState(10);
@@ -90,7 +90,7 @@ export function ColorPredictionUI() {
     
     if (totalWinnings > 0) {
         try {
-            await updateBalance(user.uid, totalWinnings);
+            await updateBalance(user.uid, totalWinnings, 'inr');
             toast({ title: "You Won!", description: `+₹${totalWinnings.toFixed(2)} added to your balance.` });
         } catch (error) {
              toast({ variant: "destructive", title: "Error", description: "There was an issue updating your balance."});
@@ -129,13 +129,13 @@ export function ColorPredictionUI() {
         toast({ variant: "destructive", title: "Invalid Amount", description: "Bet amount must be positive." });
         return;
     }
-    if (betAmount > balance) {
+    if (betAmount > inrBalance) {
         toast({ variant: "destructive", title: "Insufficient Balance", description: "You don't have enough funds to place this bet." });
         return;
     }
 
     try {
-        await updateBalance(user.uid, -betAmount);
+        await updateBalance(user.uid, -betAmount, 'inr');
         setActiveBets(prev => ({
             ...prev,
             [key]: (prev[key] || 0) + betAmount
@@ -199,7 +199,7 @@ export function ColorPredictionUI() {
             <Wallet className="w-5 h-5 text-muted-foreground"/>
           </CardHeader>
           <CardContent>
-            <p className="text-2xl sm:text-3xl font-bold">₹{balance.toLocaleString()}</p>
+            <p className="text-2xl sm:text-3xl font-bold">₹{inrBalance.toLocaleString()}</p>
           </CardContent>
         </Card>
         <Card>

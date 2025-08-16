@@ -2,7 +2,8 @@
 'use client';
 
 import { WithdrawForm } from "@/components/withdraw/withdraw-form";
-import { Coins } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Coins, ShieldCheck } from "lucide-react";
 
 export default function WithdrawPage() {
   return (
@@ -16,6 +17,13 @@ export default function WithdrawPage() {
                 </p>
             </div>
         </div>
+        <Alert variant="destructive">
+            <ShieldCheck className="h-4 w-4" />
+            <AlertTitle>Secure & Safe Withdrawals</AlertTitle>
+            <AlertDescription>
+                Withdrawal requests are processed manually by our team for security. Please allow up to 2-4 hours for bank transfers and up to 1 hour for crypto withdrawals. Ensure your details are correct to avoid delays.
+            </AlertDescription>
+        </Alert>
       <WithdrawForm />
     </div>
   );

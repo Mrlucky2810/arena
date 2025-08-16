@@ -16,40 +16,39 @@ import { Label } from '../ui/label';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const DiceFace = ({ number }: { number: number | null }) => {
-    const dots = Array.from({ length: number || 0 });
+    const dotsConfig = [
+        [], // 0
+        [{ row: 1, col: 1 }], // 1
+        [{ row: 0, col: 0 }, { row: 2, col: 2 }], // 2
+        [{ row: 0, col: 0 }, { row: 1, col: 1 }, { row: 2, col: 2 }], // 3
+        [{ row: 0, col: 0 }, { row: 0, col: 2 }, { row: 2, col: 0 }, { row: 2, col: 2 }], // 4
+        [{ row: 0, col: 0 }, { row: 0, col: 2 }, { row: 1, col: 1 }, { row: 2, col: 0 }, { row: 2, col: 2 }], // 5
+        [{ row: 0, col: 0 }, { row: 0, col: 2 }, { row: 1, col: 0 }, { row: 1, col: 2 }, { row: 2, col: 0 }, { row: 2, col: 2 }], // 6
+    ];
+
     return (
-      <motion.div 
-        key={number}
-        initial={{ opacity: 0, rotateX: -90 }}
-        animate={{ opacity: 1, rotateX: 0 }}
-        exit={{ opacity: 0, rotateX: 90 }}
-        transition={{ duration: 0.2 }}
-        className="w-24 h-24 sm:w-32 sm:h-32 bg-white rounded-xl shadow-lg flex items-center justify-center p-4"
-      >
-        {number === null ? (
-             <div className="w-full h-full grid grid-cols-3 grid-rows-3 gap-1">
-                <div className="w-4 h-4 bg-gray-300 rounded-full animate-pulse"></div>
-                <div className="w-4 h-4 bg-gray-300 rounded-full animate-pulse col-start-3"></div>
-                <div className="w-4 h-4 bg-gray-300 rounded-full animate-pulse col-start-2 row-start-2"></div>
-                <div className="w-4 h-4 bg-gray-300 rounded-full animate-pulse row-start-3"></div>
-                <div className="w-4 h-4 bg-gray-300 rounded-full animate-pulse col-start-3 row-start-3"></div>
-             </div>
-        ) : (
-          <div className={cn(
-            "w-full h-full grid grid-cols-3 grid-rows-3 gap-1",
-            number === 1 && "[&>*:nth-child(1)]:col-start-2 [&>*:nth-child(1)]:row-start-2",
-            number === 2 && "[&>*:nth-child(1)]:col-start-1 [&>*:nth-child(1)]:row-start-1 [&>*:nth-child(2)]:col-start-3 [&>*:nth-child(2)]:row-start-3",
-            number === 3 && "[&>*:nth-child(1)]:col-start-1 [&>*:nth-child(1)]:row-start-1 [&>*:nth-child(2)]:col-start-2 [&>*:nth-child(2)]:row-start-2 [&>*:nth-child(3)]:col-start-3 [&>*:nth-child(3)]:row-start-3",
-            number === 4 && "[&>*:nth-child(1)]:row-start-1 [&>*:nth-child(1)]:col-start-1 [&>*:nth-child(2)]:row-start-1 [&>*:nth-child(2)]:col-start-3 [&>*:nth-child(3)]:row-start-3 [&>*:nth-child(3)]:col-start-1 [&>*:nth-child(4)]:row-start-3 [&>*:nth-child(4)]:col-start-3",
-            number === 5 && "[&>*:nth-child(1)]:row-start-1 [&>*:nth-child(1)]:col-start-1 [&>*:nth-child(2)]:row-start-1 [&>*:nth-child(2)]:col-start-3 [&>*:nth-child(3)]:row-start-2 [&>*:nth-child(3)]:col-start-2 [&>*:nth-child(4)]:row-start-3 [&>*:nth-child(4)]:col-start-1 [&>*:nth-child(5)]:row-start-3 [&>*:nth-child(5)]:col-start-3",
-            number === 6 && "[&>*:nth-child(n)]:col-start-1 [&>*:nth-child(2n)]:col-start-3 [&>*:nth-child(1)]:row-start-1 [&>*:nth-child(2)]:row-start-1 [&>*:nth-child(3)]:row-start-2 [&>*:nth-child(4)]:row-start-2 [&>*:nth-child(5)]:row-start-3 [&>*:nth-child(6)]:row-start-3"
-          )}>
-            {dots.map((_, i) => <div key={i} className="w-4 h-4 bg-gray-800 rounded-full"></div>)}
-          </div>
-        )}
-      </motion.div>
+        <motion.div
+            key={number}
+            initial={{ opacity: 0, rotateX: -90 }}
+            animate={{ opacity: 1, rotateX: 0 }}
+            exit={{ opacity: 0, rotateX: 90 }}
+            transition={{ duration: 0.2 }}
+            className="w-24 h-24 sm:w-32 sm:h-32 bg-white rounded-xl shadow-lg flex items-center justify-center p-2"
+        >
+            <div className="grid grid-cols-3 grid-rows-3 gap-1 w-full h-full">
+                {number !== null ? (
+                    dotsConfig[number].map((dot, i) => (
+                        <div key={i} className="bg-gray-800 rounded-full" style={{ gridRow: dot.row + 1, gridColumn: dot.col + 1 }}></div>
+                    ))
+                ) : (
+                    Array.from({ length: 5 }).map((_, i) => (
+                         <div key={i} className="w-4 h-4 bg-gray-300 rounded-full animate-pulse justify-self-center self-center"></div>
+                    ))
+                )}
+            </div>
+        </motion.div>
     );
-  };
+};
   
 type WalletType = 'inr' | 'crypto';
 
@@ -153,7 +152,7 @@ export function DiceGameUI() {
                         </CardHeader>
                         <CardContent className="flex flex-col items-center justify-center gap-6 p-4 sm:p-8">
                             <div className="relative">
-                                <AnimatePresence>
+                                <AnimatePresence mode="wait">
                                     <DiceFace number={diceResult} />
                                 </AnimatePresence>
                                 <AnimatePresence>
@@ -302,3 +301,5 @@ export function DiceGameUI() {
         </div>
     );
 }
+
+    

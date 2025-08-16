@@ -8,6 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Terminal } from 'lucide-react';
 import Link from 'next/link';
 import { AdminDashboardLayout } from '@/components/admin/admin-dashboard-layout';
+import { SidebarProvider } from '@/components/ui/sidebar';
 
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -39,8 +40,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
     }
     
     return (
-        <AdminDashboardLayout>
-            {children}
-        </AdminDashboardLayout>
+        <SidebarProvider>
+            <AdminDashboardLayout>
+                {children}
+            </AdminDashboardLayout>
+        </SidebarProvider>
     );
 }

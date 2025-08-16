@@ -2,6 +2,7 @@
 'use client';
 
 import './globals.css';
+import React from 'react';
 import { Toaster } from "@/components/ui/toaster"
 import { AuthProvider, useAuth } from '@/context/auth-context';
 import { Inter } from 'next/font/google';
@@ -12,6 +13,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { cn } from '@/lib/utils';
 import { motion, AnimatePresence } from 'framer-motion';
+import { MobileBottomNav } from '@/components/layout/mobile-bottom-nav';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -22,11 +24,12 @@ const inter = Inter({
 function AppContent({ children }: { children: React.ReactNode }) {
     const pathname = usePathname();
     const router = useRouter();
-    const { loading, adminExists, loadingAdminCheck } = useAuth();
+    const { user, loading, adminExists, loadingAdminCheck, userData } = useAuth();
     
     const isAuthRoute = pathname.startsWith('/login') || pathname.startsWith('/register');
     const isAdminRoute = pathname.startsWith('/admin');
     const isRegisterAdminRoute = pathname === '/register-admin';
+    const isUserLoggedIn = !!user && userData?.role !== 'admin';
 
     useEffect(() => {
         if (!loadingAdminCheck && !adminExists && !isRegisterAdminRoute) {
@@ -83,21 +86,20 @@ function AppContent({ children }: { children: React.ReactNode }) {
     if (isAuthRoute || isRegisterAdminRoute) {
         return mainContent;
     }
-    
-    const LayoutWrapper = isAdminRoute ? React.Fragment : SidebarProvider;
 
     return (
-        <LayoutWrapper>
+        <SidebarProvider>
             <AppSidebar />
             <SidebarInset>
                 <div className="flex flex-col h-full">
                     <AppHeader />
-                    <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8">
+                    <main className="flex-1 overflow-y-auto p-4 md:p-6 lg:p-8 pb-20 md:pb-8">
                         {mainContent}
                     </main>
+                    {isUserLoggedIn && <MobileBottomNav />}
                 </div>
             </SidebarInset>
-        </LayoutWrapper>
+        </SidebarProvider>
     )
 }
 
@@ -129,9 +131,7 @@ export default function RootLayout({
             }
         `}</style>
         <AuthProvider>
-            <SidebarProvider>
-              <AppContent>{children}</AppContent>
-            </SidebarProvider>
+            <AppContent>{children}</AppContent>
             <Toaster />
         </AuthProvider>
       </body>

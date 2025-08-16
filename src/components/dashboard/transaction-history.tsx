@@ -122,7 +122,7 @@ export function TransactionHistory() {
                                 row.payout > 0 ? "text-emerald-500" : "text-red-500"
                             )}
                             >
-                            {row.payout > 0 ? `+₹${row.payout.toLocaleString()}` : `-₹${Math.abs(row.payout).toLocaleString()}`}
+                            {row.payout >= 0 ? `+₹${row.payout.toLocaleString()}` : `-₹${Math.abs(row.payout).toLocaleString()}`}
                             </TableCell>
                         </TableRow>
                         ))}

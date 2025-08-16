@@ -2,7 +2,8 @@
 'use client';
 
 import { DepositForm } from "@/components/deposit/deposit-form";
-import { Coins } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { Coins, ShieldCheck } from "lucide-react";
 
 export default function DepositPage() {
   return (
@@ -16,6 +17,13 @@ export default function DepositPage() {
                 </p>
             </div>
         </div>
+        <Alert>
+            <ShieldCheck className="h-4 w-4" />
+            <AlertTitle>Secure & Fast Deposits</AlertTitle>
+            <AlertDescription>
+              Your deposit requests will be reviewed by our team. Funds will be credited to your account upon approval, typically within 5-10 minutes. All transactions are securely processed.
+            </AlertDescription>
+        </Alert>
         <DepositForm />
     </div>
   );

@@ -32,7 +32,7 @@ interface AuthContextType {
   userData: UserData | null;
   inrBalance: number;
   cryptoBalance: number;
-  updateBalance: (userId: string, amount: number, wallet: WalletType, operation?: 'add' | 'subtract') => Promise<void>;
+  updateBalance: (userId: string, amount: number, wallet: WalletType) => Promise<void>;
   login: (email: string, pass: string) => Promise<AuthResponse>;
   register: (name: string, email: string, pass: string, referralCode?: string, role?: 'user' | 'admin') => Promise<AuthResponse>;
   logout: () => void;
@@ -242,13 +242,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.replace('/login');
   };
 
-  const updateBalance = async (userId: string, amount: number, wallet: WalletType, operation: 'add' | 'subtract' = 'add') => {
+  const updateBalance = async (userId: string, amount: number, wallet: WalletType) => {
     const userDocRef = doc(db, "users", userId);
     try {
-        const change = operation === 'add' ? amount : -amount;
         const balanceFieldToUpdate = wallet === 'inr' ? 'inrBalance' : 'cryptoBalance';
         
-        await updateDoc(userDocRef, { [balanceFieldToUpdate]: increment(change) });
+        await updateDoc(userDocRef, { [balanceFieldToUpdate]: increment(amount) });
     } catch (error) {
       console.error("Failed to update balance:", error);
       throw new Error("Failed to update balance. Please try again.");

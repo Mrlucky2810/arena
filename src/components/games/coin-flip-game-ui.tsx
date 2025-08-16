@@ -41,7 +41,11 @@ export const CoinFlipGameUI = () => {
   }
 
   const flipCoin = async () => {
-    if (!user || betAmount > inrBalance) {
+    if (!user) {
+        toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to play.' });
+        return;
+    }
+    if (betAmount > inrBalance) {
       toast({ variant: 'destructive', title: 'Insufficient balance!' });
       return;
     }
@@ -278,3 +282,5 @@ export const CoinFlipGameUI = () => {
     </div>
   );
 };
+
+    

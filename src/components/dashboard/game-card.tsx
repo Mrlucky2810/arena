@@ -45,15 +45,15 @@ export function GameCard({ game }: { game: Game }) {
           </div>
 
           {/* Top Badges */}
-          <div className="absolute top-3 left-3 flex flex-col gap-2">
+          <div className="absolute top-2 left-2 sm:top-3 sm:left-3 flex flex-col gap-2">
             {game.isHot && (
-              <Badge className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white shadow-lg animate-pulse">
+              <Badge className="bg-gradient-to-r from-red-500 to-orange-500 hover:from-red-600 hover:to-orange-600 text-white shadow-lg animate-pulse py-0.5 px-1.5 sm:py-1 sm:px-2.5 text-[10px] sm:text-xs">
                 <Zap className="w-3 h-3 mr-1" />
                 HOT
               </Badge>
             )}
             {game.winMultiplier && (
-              <Badge className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg">
+              <Badge className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg py-0.5 px-1.5 sm:py-1 sm:px-2.5 text-[10px] sm:text-xs">
                 <TrendingUp className="w-3 h-3 mr-1" />
                 {game.winMultiplier}
               </Badge>
@@ -62,22 +62,22 @@ export function GameCard({ game }: { game: Game }) {
 
           {/* RTP Badge */}
           {game.rtp && (
-            <div className="absolute top-3 right-3">
-              <Badge variant="secondary" className="bg-black/50 text-white backdrop-blur-sm">
+            <div className="absolute top-2 right-2 sm:top-3 sm:right-3">
+              <Badge variant="secondary" className="bg-black/50 text-white backdrop-blur-sm text-[10px] sm:text-xs">
                 RTP {game.rtp}%
               </Badge>
             </div>
           )}
 
           {/* Game Title and Info */}
-          <div className="absolute bottom-0 left-0 p-4 w-full">
-            <div className="space-y-2">
-              <h3 className="text-lg font-bold text-white group-hover:text-primary transition-colors duration-300">
+          <div className="absolute bottom-0 left-0 p-2 sm:p-4 w-full">
+            <div className="space-y-1 sm:space-y-2">
+              <h3 className="text-base sm:text-lg font-bold text-white group-hover:text-primary transition-colors duration-300">
                 {game.name}
               </h3>
-              <div className="flex items-center justify-between text-sm">
+              <div className="flex items-center justify-between text-xs sm:text-sm">
                 <div className="flex items-center gap-2 text-white/80">
-                  <Coins className="w-4 h-4" />
+                  <Coins className="w-3 h-3 sm:w-4 sm:h-4" />
                   <span>Min ₹{game.minBet}</span>
                 </div>
                 <div className="text-emerald-400 font-medium">
@@ -102,7 +102,7 @@ export function GameCard({ game }: { game: Game }) {
         </div>
 
         {/* Bottom Stats Bar */}
-        <div className="p-3 bg-gradient-to-r from-muted/80 to-muted/60 backdrop-blur-sm">
+        <div className="p-2 sm:p-3 bg-gradient-to-r from-muted/80 to-muted/60 backdrop-blur-sm">
           <div className="flex items-center justify-between text-xs">
             <div className="flex items-center gap-2 text-muted-foreground">
               <div className="flex items-center gap-1.5">

@@ -3,12 +3,9 @@
 
 import { StatCard } from "@/components/dashboard/stat-card";
 import { WelcomeHeader } from "@/components/dashboard/welcome-header";
-import { trendingGames, allGames } from "@/lib/mock-data";
+import { trendingGames, promotions } from "@/lib/mock-data";
 import {
-  ArrowDownRight,
-  ArrowUpRight,
-  Users,
-  Wallet,
+  ArrowRight,
 } from "lucide-react";
 import {
   Carousel,
@@ -22,57 +19,12 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { TransactionHistory } from "@/components/dashboard/transaction-history";
 import Link from "next/link";
-import { CardDescription } from "@/components/ui/card";
 import { useAuth } from "@/context/auth-context";
-import { useEffect, useState } from "react";
-import { collection, getDocs, query, where, Timestamp, orderBy, limit } from "firebase/firestore";
-import { db } from "@/lib/firebase";
 import { GuestDashboard } from "@/components/dashboard/guest-dashboard";
+import React from "react";
 
 export default function DashboardPage() {
-    const { user, userData, loading, inrBalance, cryptoBalance } = useAuth();
-    const [pnl, setPnl] = useState(0);
-    const [referralEarnings, setReferralEarnings] = useState(0);
-
-    const totalBalance = inrBalance + cryptoBalance;
-
-    useEffect(() => {
-        if (user) {
-            const fetchPnl = async () => {
-                const now = new Date();
-                const twentyFourHoursAgo = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-                
-                const q = query(
-                    collection(db, "game_history"),
-                    where("userId", "==", user.uid),
-                    limit(50) // Fetch recent 50 transactions to calculate P&L from
-                );
-                
-                const querySnapshot = await getDocs(q);
-                let totalPayout = 0;
-                querySnapshot.forEach(doc => {
-                    const docData = doc.data();
-                    const docTimestamp = docData.createdAt?.toDate();
-                    if (docTimestamp && docTimestamp >= twentyFourHoursAgo) {
-                       totalPayout += doc.data().payout;
-                    }
-                });
-                setPnl(totalPayout);
-            };
-
-            const fetchReferralEarnings = async () => {
-                // This is a placeholder for a real referral earnings calculation
-                // For now, we'll just set it to 0 or a value from the user document if it exists
-                setReferralEarnings(userData?.referralEarnings || 0);
-            }
-
-            fetchPnl();
-            fetchReferralEarnings();
-        }
-    }, [user, userData]);
-
-
-  const pnlIsPositive = pnl >= 0;
+  const { user, loading } = useAuth();
 
   if (loading) {
     return <div>Loading...</div>;
@@ -82,35 +34,22 @@ export default function DashboardPage() {
     return <GuestDashboard />;
   }
 
+  const firstPromo = promotions[0];
+
   return (
     <div className="flex flex-col gap-8">
-      <WelcomeHeader name={userData?.name || ""} />
-
+      <WelcomeHeader />
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        <StatCard
-          title="Total Balance"
-          value={user ? `₹${totalBalance.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "Log in to see"}
-          icon={Wallet}
-        />
-        <StatCard
-          title="Today's P&L"
-          value={user ? `₹${Math.abs(pnl).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "Log in to see"}
-          icon={pnlIsPositive ? ArrowUpRight : ArrowDownRight}
-          iconClassName={user ? (pnlIsPositive ? "text-emerald-500" : "text-red-500") : ""}
-        />
-        <StatCard
-          title="Referral Earnings"
-          value={user ? `₹${referralEarnings.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}` : "Log in to see"}
-          icon={Users}
-        />
+        <StatCard type="balance" />
+        <StatCard type="pnl" />
+        <StatCard type="referral" />
       </div>
-
       <div>
         <h2 className="text-2xl font-bold tracking-tight mb-4">Trending Games</h2>
         <Carousel opts={{ align: "start", loop: true }}>
-          <CarouselContent>
+          <CarouselContent className="-ml-2 md:-ml-4">
             {trendingGames.map((game) => (
-              <CarouselItem key={game.name} className="basis-full md:basis-1/2 xl:basis-1/3">
+              <CarouselItem key={game.name} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
                 <GameCard game={game} />
               </CarouselItem>
             ))}
@@ -125,31 +64,32 @@ export default function DashboardPage() {
           <TransactionHistory />
         </div>
         <div className="space-y-8">
-             <Card className="text-center bg-gradient-to-r from-primary/10 to-accent/10">
+            {firstPromo && (
+              <Card className="bg-gradient-to-r from-primary/10 to-accent/10">
                 <CardHeader>
-                    <CardTitle className="text-xl">Stay Tuned for More!</CardTitle>
-                    <CardDescription>We are always adding new and exciting promotions. Follow us on social media or check back regularly to not miss out!</CardDescription>
+                  <div className="flex items-center gap-3">
+                    <div className="p-3 rounded-md bg-muted">
+                        {React.createElement(firstPromo.icon, { className: "w-6 h-6 text-primary" })}
+                    </div>
+                    <div>
+                        <CardTitle>{firstPromo.title}</CardTitle>
+                        {firstPromo.badge && <span className="text-xs font-semibold text-primary bg-primary/10 py-1 px-2.5 rounded-full whitespace-nowrap">{firstPromo.badge}</span>}
+                    </div>
+                  </div>
                 </CardHeader>
-            </Card>
+                <CardContent>
+                  <p className="text-muted-foreground mb-4 text-sm">{firstPromo.description}</p>
+                   <Button asChild className="w-full">
+                        <Link href="/promotions">
+                            View Promotions
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                        </Link>
+                    </Button>
+                </CardContent>
+              </Card>
+            )}
         </div>
       </div>
-
-      <div className="grid gap-8 lg:grid-cols-1">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between">
-            <CardTitle>All Games</CardTitle>
-            <Button asChild variant="ghost">
-                <Link href="/games">View All</Link>
-            </Button>
-          </CardHeader>
-          <CardContent className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
-            {allGames.slice(0, 4).map((game) => (
-                <GameCard key={game.name} game={game} />
-            ))}
-          </CardContent>
-        </Card>
-      </div>
-
     </div>
   );
 }

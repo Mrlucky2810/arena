@@ -91,7 +91,7 @@ export function DepositForm() {
             <CardDescription>Scan the QR code to pay, then submit the transaction details below.</CardDescription>
           </CardHeader>
           <CardContent className="grid gap-8 md:grid-cols-2">
-            <div className="flex flex-col items-center justify-center gap-4">
+            <div className="flex flex-col items-center justify-center gap-4 p-4 rounded-lg bg-muted">
                 <Image src="https://placehold.co/256x256.png" width={256} height={256} alt="INR Deposit QR Code" className="rounded-lg w-48 h-48 sm:w-64 sm:h-64" data-ai-hint="QR code" />
                 <p className="text-sm text-muted-foreground">Scan with any UPI app</p>
             </div>
@@ -136,11 +136,11 @@ export function DepositForm() {
                 <CardDescription>Send funds to the address below, then submit the transaction details.</CardDescription>
             </CardHeader>
             <CardContent className="grid gap-8 md:grid-cols-2">
-                <div className="flex flex-col items-center justify-center gap-4">
+                <div className="flex flex-col items-center justify-center gap-4 p-4 rounded-lg bg-muted">
                     <Image src="https://placehold.co/256x256.png" width={256} height={256} alt="Crypto Deposit QR Code" className="rounded-lg w-48 h-48 sm:w-64 sm:h-64" data-ai-hint="QR code" />
                     <p className="text-sm text-muted-foreground font-semibold">Wallet Address (BTC)</p>
-                    <div className="flex items-center gap-2 p-2 rounded-md bg-muted w-full text-center">
-                        <p className="text-xs sm:text-sm text-muted-foreground truncate flex-1">{cryptoWalletAddress}</p>
+                    <div className="flex items-center gap-2 p-2 rounded-md bg-background w-full text-center">
+                        <p className="text-xs sm:text-sm text-muted-foreground truncate flex-1 break-all">{cryptoWalletAddress}</p>
                         <Button variant="ghost" size="icon" onClick={copyToClipboard}>
                             <Copy className="w-4 h-4"/>
                         </Button>
