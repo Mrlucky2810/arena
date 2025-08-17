@@ -1,4 +1,3 @@
-
 "use client";
 
 import { useAuth } from "@/context/auth-context";
@@ -43,7 +42,7 @@ export function WelcomeHeader() {
         >
             {user ? (
               <>
-                Welcome back, <span className="bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">{displayName}</span>!
+                Welcome back, <span className="bg-gradient-to-r from-emerald-400 via-green-400 to-teal-400 bg-clip-text text-transparent font-extrabold">{displayName}</span>!
               </>
             ) : (
               "Welcome to Apex Arena"

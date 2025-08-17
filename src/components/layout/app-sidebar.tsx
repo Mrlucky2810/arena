@@ -93,38 +93,41 @@ export function AppSidebar() {
         )}
 
         <SidebarMenu className="space-y-2">
-          {filteredNavItems.map((item, index) => (
-            <SidebarMenuItem key={item.title}>
-              <SidebarMenuButton
-                asChild
-                isActive={pathname.startsWith(item.href)}
-                tooltip={item.title}
-                className="group relative overflow-hidden transition-all duration-300 hover:bg-primary/10 data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/20 data-[active=true]:to-accent/20 data-[active=true]:border-primary/30"
-              >
-                <Link href={item.href} className="flex items-center gap-3 px-3 py-2 rounded-lg">
-                  <div className={`p-1 rounded-md transition-colors ${
-                    pathname.startsWith(item.href) 
-                      ? 'bg-primary/20 text-primary' 
-                      : 'group-hover:bg-primary/10 group-hover:text-primary'
-                  }`}>
-                    <item.icon className="h-4 w-4" />
-                  </div>
-                  <span className={`font-medium transition-colors ${
-                    pathname.startsWith(item.href) 
-                      ? 'text-primary' 
-                      : 'group-hover:text-primary'
-                  }`}>
-                    {item.title}
-                  </span>
-                  
-                  {/* Active indicator */}
-                  {pathname.startsWith(item.href) && (
-                    <div className="absolute right-2 w-1 h-6 bg-gradient-to-b from-primary to-accent rounded-full" />
-                  )}
-                </Link>
-              </SidebarMenuButton>
-            </SidebarMenuItem>
-          ))}
+          {filteredNavItems.map((item, index) => {
+            const isActive = pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+            return (
+              <SidebarMenuItem key={item.title}>
+                <SidebarMenuButton
+                  asChild
+                  isActive={isActive}
+                  tooltip={item.title}
+                  className="group relative overflow-hidden transition-all duration-300 hover:bg-primary/10 data-[active=true]:bg-gradient-to-r data-[active=true]:from-primary/20 data-[active=true]:to-accent/20"
+                >
+                  <Link href={item.href} className="flex items-center gap-3 px-3 py-2 rounded-lg">
+                    <div className={`p-1 rounded-md transition-colors ${
+                      isActive 
+                        ? 'bg-primary/20 text-primary' 
+                        : 'group-hover:bg-primary/10 group-hover:text-primary'
+                    }`}>
+                      <item.icon className="h-4 w-4" />
+                    </div>
+                    <span className={`font-medium transition-colors ${
+                      isActive
+                        ? 'text-primary' 
+                        : 'group-hover:text-primary'
+                    }`}>
+                      {item.title}
+                    </span>
+                    
+                    {/* Active indicator */}
+                    {isActive && (
+                      <div className="absolute right-2 w-1 h-6 bg-gradient-to-b from-primary to-accent rounded-full" />
+                    )}
+                  </Link>
+                </SidebarMenuButton>
+              </SidebarMenuItem>
+            )
+          })}
         </SidebarMenu>
 
         {/* Hot Games Section for Guests */}

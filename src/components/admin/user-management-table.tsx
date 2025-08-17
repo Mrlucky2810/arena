@@ -18,6 +18,8 @@ interface User {
     email: string;
     balance: number;
     status: 'active' | 'blocked';
+    inrBalance?: number;
+    cryptoBalance?: number;
 }
 
 export function UserManagementTable() {
@@ -32,10 +34,15 @@ export function UserManagementTable() {
         try {
             const usersCollection = collection(db, 'users');
             const usersSnapshot = await getDocs(usersCollection);
-            const usersList = usersSnapshot.docs.map(doc => ({
-                uid: doc.id,
-                ...doc.data()
-            } as User));
+            const usersList = usersSnapshot.docs.map(doc => {
+                const data = doc.data();
+                const totalBalance = (data.inrBalance || 0) + (data.cryptoBalance || 0);
+                return {
+                    uid: doc.id,
+                    balance: totalBalance,
+                    ...data
+                } as User;
+            });
             setUsers(usersList);
             setFilteredUsers(usersList);
         } catch (error) {
@@ -101,7 +108,7 @@ export function UserManagementTable() {
                                 <TableRow key={user.uid}>
                                     <TableCell className="font-medium">{user.name}</TableCell>
                                     <TableCell>{user.email}</TableCell>
-                                    <TableCell>₹{user.balance.toLocaleString()}</TableCell>
+                                    <TableCell>₹{(user.balance || 0).toLocaleString()}</TableCell>
                                     <TableCell>
                                         <Badge variant={user.status === 'blocked' ? 'destructive' : 'default'} className={user.status === 'active' ? 'bg-emerald-500/20 text-emerald-700' : ''}>
                                             {user.status || 'active'}
