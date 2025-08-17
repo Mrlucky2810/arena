@@ -11,19 +11,21 @@ import { db } from "@/lib/firebase";
 import { ArrowDownRight, ArrowUpRight, Users, Wallet } from "lucide-react";
 
 type StatCardProps = {
-  type: 'balance' | 'pnl' | 'referral';
+  type: 'balance' | 'pnl' | 'referral' | 'total-referrals';
 };
 
 export function StatCard({ type }: StatCardProps) {
   const { user, userData, loading, inrBalance, cryptoBalance } = useAuth();
   const [pnl, setPnl] = useState(0);
   const [referralEarnings, setReferralEarnings] = useState(0);
+  const [totalReferrals, setTotalReferrals] = useState(0);
   const [pnlLoading, setPnlLoading] = useState(true);
+  const [referralLoading, setReferralLoading] = useState(true);
 
   const totalBalance = inrBalance + cryptoBalance;
 
   useEffect(() => {
-    if (user) {
+    if (user && userData) {
         const fetchPnl = async () => {
             setPnlLoading(true);
             const now = new Date();
@@ -48,12 +50,22 @@ export function StatCard({ type }: StatCardProps) {
             setPnlLoading(false);
         };
 
-        const fetchReferralEarnings = async () => {
+        const fetchReferralData = async () => {
+            setReferralLoading(true);
             setReferralEarnings(userData?.referralEarnings || 0);
+
+            const referralsQuery = query(collection(db, 'referrals'), where('referrerId', '==', user.uid));
+            const referralsSnapshot = await getDocs(referralsQuery);
+            setTotalReferrals(referralsSnapshot.size);
+            
+            setReferralLoading(false);
         }
 
         if (type === 'pnl') fetchPnl();
-        if (type === 'referral') fetchReferralEarnings();
+        if (type === 'referral' || type === 'total-referrals') fetchReferralData();
+    } else {
+        if (type === 'pnl') setPnlLoading(false);
+        if (type === 'referral' || type === 'total-referrals') setReferralLoading(false);
     }
   }, [user, userData, type]);
 
@@ -77,13 +89,23 @@ export function StatCard({ type }: StatCardProps) {
       referral: {
           title: "Referral Earnings",
           value: `₹${referralEarnings.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          icon: Wallet,
+          iconClassName: "",
+          isLoading: referralLoading,
+      },
+      'total-referrals': {
+          title: "Total Referrals",
+          value: totalReferrals.toLocaleString(),
           icon: Users,
           iconClassName: "",
-          isLoading: loading,
+          isLoading: referralLoading,
       }
   }
 
-  const { title, value, icon: Icon, iconClassName, isLoading } = cardData[type];
+  const currentCard = cardData[type];
+  if (!currentCard) return null; // Should not happen with TS, but safe for JS
+  
+  const { title, value, icon: Icon, iconClassName, isLoading } = currentCard;
 
   if (isLoading) {
     return (

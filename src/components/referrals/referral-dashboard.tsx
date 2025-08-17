@@ -23,9 +23,8 @@ interface ReferredUser {
 export function ReferralDashboard() {
   const { toast } = useToast();
   const { user, userData, loading } = useAuth();
-  const [totalReferrals, setTotalReferrals] = useState(0);
-  const [totalEarnings, setTotalEarnings] = useState(0);
   const [referredUsersList, setReferredUsersList] = useState<ReferredUser[]>([]);
+  const [dataLoading, setDataLoading] = useState(true);
 
   const referralLink = `https://apexarena.com/register?ref=${userData?.referralCode || ''}`;
   const referralCode = userData?.referralCode || '';
@@ -41,14 +40,9 @@ export function ReferralDashboard() {
   useEffect(() => {
     if (user && userData) {
         const fetchReferralData = async () => {
-            // Fetch total earnings from user data
-            setTotalEarnings(userData.referralEarnings || 0);
-
-            // Fetch referred users
+            setDataLoading(true);
             const referralsQuery = query(collection(db, 'referrals'), where('referrerId', '==', user.uid));
             const referralsSnapshot = await getDocs(referralsQuery);
-            
-            setTotalReferrals(referralsSnapshot.size);
 
             const usersList: ReferredUser[] = [];
             for (const referralDoc of referralsSnapshot.docs) {
@@ -67,19 +61,22 @@ export function ReferralDashboard() {
                 }
             }
             setReferredUsersList(usersList);
+            setDataLoading(false);
         };
 
         fetchReferralData();
+    } else if (!loading) {
+        setDataLoading(false);
     }
-  }, [user, userData]);
+  }, [user, userData, loading]);
   
   if (loading) return <div>Loading...</div>
 
   return (
     <div className="space-y-8">
       <div className="grid gap-4 md:grid-cols-2">
-        <StatCard title="Total Referrals" value={totalReferrals.toString()} icon={Users} />
-        <StatCard title="Total Earnings" value={`₹${totalEarnings.toLocaleString()}`} icon={Wallet} />
+        <StatCard type="total-referrals" />
+        <StatCard type="referral" />
       </div>
 
       <Card>
@@ -111,36 +108,38 @@ export function ReferralDashboard() {
           <CardDescription>Track the status of your referrals and your earnings from them.</CardDescription>
         </CardHeader>
         <CardContent className="overflow-x-auto">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>User</TableHead>
-                <TableHead>Date Joined</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead className="text-right">Earnings</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {referredUsersList.length > 0 ? (
-                referredUsersList.map((user, index) => (
-                  <TableRow key={index}>
-                    <TableCell className="font-medium">{user.name}</TableCell>
-                    <TableCell>{user.dateJoined}</TableCell>
-                    <TableCell>
-                      <Badge variant={user.status === "Active" ? "default" : "secondary"} className={user.status === 'Active' ? 'bg-emerald-500/20 text-emerald-600' : ''}>
-                        {user.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right font-semibold text-emerald-500">{`₹${user.earnings.toLocaleString()}`}</TableCell>
-                  </TableRow>
-                ))
-              ) : (
+          {dataLoading ? (<p>Loading referrals...</p>) : (
+            <Table>
+                <TableHeader>
                 <TableRow>
-                    <TableCell colSpan={4} className="text-center text-muted-foreground">You haven't referred anyone yet.</TableCell>
+                    <TableHead>User</TableHead>
+                    <TableHead>Date Joined</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead className="text-right">Earnings</TableHead>
                 </TableRow>
-              )}
-            </TableBody>
-          </Table>
+                </TableHeader>
+                <TableBody>
+                {referredUsersList.length > 0 ? (
+                    referredUsersList.map((user, index) => (
+                    <TableRow key={index}>
+                        <TableCell className="font-medium">{user.name}</TableCell>
+                        <TableCell>{user.dateJoined}</TableCell>
+                        <TableCell>
+                        <Badge variant={user.status === "Active" ? "default" : "secondary"} className={user.status === 'Active' ? 'bg-emerald-500/20 text-emerald-600' : ''}>
+                            {user.status}
+                        </Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-semibold text-emerald-500">{`₹${user.earnings.toLocaleString()}`}</TableCell>
+                    </TableRow>
+                    ))
+                ) : (
+                    <TableRow>
+                        <TableCell colSpan={4} className="text-center text-muted-foreground">You haven't referred anyone yet.</TableCell>
+                    </TableRow>
+                )}
+                </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
 

@@ -1,25 +1,25 @@
-
 "use client";
 
 import { useState } from 'react';
 import { useAuth } from '@/context/auth-context';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Play, Wallet } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Play, Wallet, Trophy, Target, Zap, RotateCcw } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
 import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { cn } from '@/lib/utils';
+import { Badge } from '../ui/badge';
 
 const segments = [
-    { label: '2x', multiplier: 2, color: 'bg-teal-500', probability: 25 },
-    { label: 'Lose', multiplier: 0, color: 'bg-slate-600', probability: 30 },
-    { label: '1.5x', multiplier: 1.5, color: 'bg-sky-500', probability: 20 },
-    { label: 'Lose', multiplier: 0, color: 'bg-slate-700', probability: 15 },
-    { label: '5x', multiplier: 5, color: 'bg-fuchsia-500', probability: 8 },
-    { label: 'Lose', multiplier: 0, color: 'bg-slate-800', probability: 2 }
+    { label: '2x', multiplier: 2, color: 'from-teal-500 to-teal-600', probability: 25, bgColor: 'bg-teal-500' },
+    { label: 'Lose', multiplier: 0, color: 'from-slate-600 to-slate-700', probability: 30, bgColor: 'bg-slate-600' },
+    { label: '1.5x', multiplier: 1.5, color: 'from-sky-500 to-sky-600', probability: 20, bgColor: 'bg-sky-500' },
+    { label: 'Lose', multiplier: 0, color: 'from-slate-700 to-slate-800', probability: 15, bgColor: 'bg-slate-700' },
+    { label: '5x', multiplier: 5, color: 'from-fuchsia-500 to-fuchsia-600', probability: 8, bgColor: 'bg-fuchsia-500' },
+    { label: 'Lose', multiplier: 0, color: 'from-slate-800 to-slate-900', probability: 2, bgColor: 'bg-slate-800' }
 ];
 
 const totalProbability = segments.reduce((acc, seg) => acc + seg.probability, 0);
@@ -31,6 +31,11 @@ export function SpinWheelGameUI() {
   const [isSpinning, setIsSpinning] = useState(false);
   const [rotation, setRotation] = useState(0);
   const [result, setResult] = useState<string | null>(null);
+  const [selectedSegment, setSelectedSegment] = useState<number | null>(null);
+  const [totalWins, setTotalWins] = useState(0);
+  const [totalGames, setTotalGames] = useState(0);
+  const [bestMultiplier, setBestMultiplier] = useState(0);
+  const [streak, setStreak] = useState(0);
 
   const logGameResult = async (payout: number, resultLabel: string) => {
     if (!user) return;
@@ -61,6 +66,8 @@ export function SpinWheelGameUI() {
 
     setIsSpinning(true);
     setResult(null);
+    setSelectedSegment(null);
+    setTotalGames(prev => prev + 1);
     
     try {
         await updateBalance(user.uid, -betAmount, 'inr');
@@ -72,204 +79,104 @@ export function SpinWheelGameUI() {
 
     const random = Math.random() * totalProbability;
     let cumulative = 0;
-    let selectedSegment = segments[0];
+    let selectedSegmentData = segments[0];
     let selectedIndex = 0;
 
     for (const [index, segment] of segments.entries()) {
       cumulative += segment.probability;
       if (random <= cumulative) {
-        selectedSegment = segment;
+        selectedSegmentData = segment;
         selectedIndex = index;
         break;
       }
     }
 
     const segmentAngle = 360 / segments.length;
-    const targetRotation = 360 * 5 + (360 - (selectedIndex * segmentAngle) - segmentAngle / 2);
+    const targetRotation = 360 * 8 + (360 - (selectedIndex * segmentAngle) - segmentAngle / 2);
     setRotation(prev => prev + targetRotation);
+    setSelectedSegment(selectedIndex);
 
     setTimeout(() => {
       setIsSpinning(false);
-      setResult(selectedSegment.label);
+      setResult(selectedSegmentData.label);
 
-      if (selectedSegment.multiplier > 0) {
-        const winAmount = Math.floor(betAmount * selectedSegment.multiplier);
+      if (selectedSegmentData.multiplier > 0) {
+        const winAmount = Math.floor(betAmount * selectedSegmentData.multiplier);
         const netWin = winAmount - betAmount;
         updateBalance(user.uid, winAmount, 'inr');
-        logGameResult(netWin, selectedSegment.label);
-        toast({ title: "You Won!", description: `+₹${netWin}! Landed on ${selectedSegment.label}!` });
+        setTotalWins(prev => prev + 1);
+        setStreak(prev => prev + 1);
+        setBestMultiplier(prev => Math.max(prev, selectedSegmentData.multiplier));
+        logGameResult(netWin, selectedSegmentData.label);
+        toast({ 
+          title: "🎉 Jackpot!", 
+          description: `+₹${netWin} won! Landed on ${selectedSegmentData.label}!`,
+          className: "bg-emerald-50 border-emerald-200 text-emerald-800"
+        });
       } else {
-        logGameResult(-betAmount, selectedSegment.label);
-        toast({ variant: 'destructive', title: 'You Lost!', description: `Landed on ${selectedSegment.label}.` });
+        setStreak(0);
+        logGameResult(-betAmount, selectedSegmentData.label);
+        toast({ 
+          variant: 'destructive', 
+          title: '💔 You Lost!', 
+          description: `Landed on ${selectedSegmentData.label}. Try again!` 
+        });
       }
     }, 4000);
   };
   
   const potentialWin = betAmount * 5;
   const winChance = segments.reduce((acc, s) => s.multiplier > 0 ? acc + s.probability : acc, 0);
+  const winRate = totalGames > 0 ? ((totalWins / totalGames) * 100).toFixed(1) : '0.0';
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
+      <div className="max-w-7xl mx-auto">
+        {/* Header Stats */}
         <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            className="lg:col-span-2"
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8"
         >
-            <Card className="text-center overflow-hidden bg-card/80 backdrop-blur-sm border-white/5">
-                <CardHeader>
-                    <CardTitle>Wheel of Fortune</CardTitle>
-                </CardHeader>
-                <CardContent className="flex flex-col items-center justify-center gap-6 p-4 sm:p-8">
-                <div className="relative mx-auto w-64 h-64 sm:w-80 sm:h-80 mb-8">
-                    <div className="absolute top-0 left-1/2 transform -translate-x-1/2 -translate-y-4 z-10">
-                      <div
-                        className="w-0 h-0 
-                        border-l-[15px] border-l-transparent
-                        border-r-[15px] border-r-transparent
-                        border-t-[30px] border-t-primary"
-                      ></div>
-                    </div>
-                    
-                    <motion.div
-                        className="w-full h-full rounded-full border-4 border-primary shadow-xl relative overflow-hidden"
-                        animate={{ rotate: rotation }}
-                        transition={{ duration: 4, ease: "easeOut" }}
-                    >
-                        {segments.map((segment, index) => {
-                        const angle = 360 / segments.length;
-                        return (
-                            <div
-                            key={index}
-                            className={cn("absolute w-full h-full", segment.color)}
-                            style={{
-                                clipPath: `polygon(50% 50%, 100% 50%, 100% 0, 50% 0)`,
-                                transform: `rotate(${angle * index}deg)`,
-                            }}
-                            >
-                            <div
-                                className="absolute text-white font-bold text-lg w-1/2 h-1/2 flex items-center justify-center"
-                                style={{ transform: `rotate(${angle/2}deg) translate(25%, 25%)`}}
-                            >
-                                {segment.label}
-                            </div>
-                            </div>
-                        );
-                        })}
-                        
-                        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-16 h-16 bg-background rounded-full border-4 border-primary flex items-center justify-center">
-                            <Play className="text-primary" />
-                        </div>
-                    </motion.div>
-                </div>
-
-                {result && !isSpinning && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.5 }}
-                        animate={{ opacity: 1, scale: 1 }}
-                        className={cn("mb-6 text-2xl font-bold",
-                            result !== 'Lose' ? 'text-emerald-500' : 'text-destructive'
-                        )}
-                    >
-                    {result !== 'Lose' ? `🏆 Won ${result}!` : '💔 Better luck next time!'}
-                    </motion.div>
-                )}
-
-                <Button
-                    size="lg"
-                    onClick={spinWheel}
-                    disabled={isSpinning || betAmount > inrBalance}
-                    className={cn("w-full h-14 text-lg shadow-lg hover:shadow-primary/50 transition-shadow", result && result !== 'Lose' && 'pulse-win')}
-                >
-                    {isSpinning ? 'Spinning...' : 'Spin the Wheel'}
-                </Button>
-                </CardContent>
-            </Card>
+          <Card className="bg-gradient-to-r from-emerald-500/10 to-emerald-600/10 border-emerald-500/20 backdrop-blur-sm">
+            <CardContent className="p-4 text-center">
+              <Trophy className="w-6 h-6 mx-auto mb-2 text-emerald-400" />
+              <p className="text-2xl font-bold text-emerald-400">{totalWins}</p>
+              <p className="text-xs text-emerald-300">Total Wins</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gradient-to-r from-blue-500/10 to-blue-600/10 border-blue-500/20 backdrop-blur-sm">
+            <CardContent className="p-4 text-center">
+              <Target className="w-6 h-6 mx-auto mb-2 text-blue-400" />
+              <p className="text-2xl font-bold text-blue-400">{winRate}%</p>
+              <p className="text-xs text-blue-300">Win Rate</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gradient-to-r from-orange-500/10 to-orange-600/10 border-orange-500/20 backdrop-blur-sm">
+            <CardContent className="p-4 text-center">
+              <Zap className="w-6 h-6 mx-auto mb-2 text-orange-400" />
+              <p className="text-2xl font-bold text-orange-400">{streak}</p>
+              <p className="text-xs text-orange-300">Win Streak</p>
+            </CardContent>
+          </Card>
+          
+          <Card className="bg-gradient-to-r from-purple-500/10 to-purple-600/10 border-purple-500/20 backdrop-blur-sm">
+            <CardContent className="p-4 text-center">
+              <Wallet className="w-6 h-6 mx-auto mb-2 text-purple-400" />
+              <p className="text-2xl font-bold text-purple-400">₹{inrBalance.toLocaleString()}</p>
+              <p className="text-xs text-purple-300">Balance</p>
+            </CardContent>
+          </Card>
         </motion.div>
 
-        <div className="space-y-6">
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.1 }}>
-                <Card className="bg-card/80 backdrop-blur-sm border-white/5">
-                <CardHeader><CardTitle>Bet Amount</CardTitle></CardHeader>
-                <CardContent className="space-y-4">
-                    <Input
-                        type="number"
-                        min="1"
-                        max={inrBalance}
-                        value={betAmount}
-                        onChange={(e) => setBetAmount(Number(e.target.value))}
-                        className="text-center text-xl font-bold h-12 bg-input/50"
-                        disabled={isSpinning}
-                    />
-                    <div className="grid grid-cols-2 gap-2">
-                    {[10, 25, 50, 100].map((amount) => (
-                        <Button
-                        key={amount}
-                        variant="outline"
-                        onClick={() => setBetAmount(amount)}
-                        disabled={isSpinning || amount > inrBalance}
-                        >
-                        ₹{amount}
-                        </Button>
-                    ))}
-                    </div>
-                    <Button
-                    variant="secondary"
-                    onClick={() => setBetAmount(inrBalance)}
-                    disabled={isSpinning}
-                    className="w-full"
-                    >
-                    All In (₹{inrBalance.toLocaleString()})
-                    </Button>
-                </CardContent>
-                </Card>
-            </motion.div>
-
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.2 }}>
-                <Card className="bg-card/80 backdrop-blur-sm border-white/5">
-                    <CardHeader className="flex-row items-center justify-between pb-2">
-                        <CardTitle className="text-lg">Game Info</CardTitle>
-                        <Wallet className="w-5 h-5 text-muted-foreground"/>
-                    </CardHeader>
-                    <CardContent className="space-y-3 pt-4 text-sm">
-                        <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Your Balance</span>
-                            <span className="font-semibold text-primary">₹{inrBalance.toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Bet Amount</span>
-                            <span className="font-semibold">₹{betAmount.toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Max Win</span>
-                            <span className="font-semibold text-emerald-500">₹{potentialWin.toLocaleString()}</span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                            <span className="text-muted-foreground">Win Chance</span>
-                            <span className="font-semibold">{winChance}%</span>
-                        </div>
-                    </CardContent>
-                </Card>
-            </motion.div>
-             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5, delay: 0.3 }}>
-                <Card className="bg-card/80 backdrop-blur-sm border-white/5">
-                <CardHeader>
-                    <CardTitle className="text-lg">Segments</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-2">
-                    {segments.map((segment, index) => (
-                    <div key={index} className="flex items-center justify-between p-2 rounded-lg bg-muted/50">
-                        <div className="flex items-center space-x-2">
-                        <div className={cn(`w-4 h-4 rounded-full`, segment.color)}></div>
-                        <span className="font-medium">{segment.label}</span>
-                        </div>
-                        <span className="text-muted-foreground text-sm">{segment.probability}%</span>
-                    </div>
-                    ))}
-                </CardContent>
-                </Card>
-            </motion.div>
-        </div>
-    </div>
-  );
-};
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start">
+          {/* Main Wheel Area */}
+          <motion.div 
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6 }}
+              className="lg:col-span-2"
+          >
+              <Card className="text-center overflow-hidden bg-slate-800/50 backdrop-blur-xl border-slate-700/50 shadow-2xl">
