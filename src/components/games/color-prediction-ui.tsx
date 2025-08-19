@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +15,7 @@ import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { useToast } from "@/hooks/use-toast";
 import { motion, AnimatePresence } from "framer-motion";
+import { LoginPromptDialog } from "../auth/login-prompt-dialog";
 
 const BETTING_DURATION = 30;
 
@@ -29,6 +31,7 @@ export function ColorPredictionUI() {
   const [totalGames, setTotalGames] = useState(0);
   const [streak, setStreak] = useState(0);
   const [isAnimating, setIsAnimating] = useState(false);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
   const logGameResult = async (bet: {key: string, amount: number}, winAmount: number) => {
     if (!user) return;
@@ -48,7 +51,6 @@ export function ColorPredictionUI() {
   }
 
   const handleRoundEnd = async () => {
-    if (!user) return;
     setIsAnimating(true);
     
     const winningNumber = Math.floor(Math.random() * 10);
@@ -65,6 +67,11 @@ export function ColorPredictionUI() {
     // Add to history
     setRoundHistory(prev => [{ color: winningColor, number: winningNumber }, ...prev.slice(0, 9)]);
     setLastResult({ round: Math.floor(Math.random() * 100000), color: winningColor, number: winningNumber });
+
+    if (!user) {
+        setTimeout(() => setIsAnimating(false), 2000);
+        return;
+    }
 
     let totalWinnings = 0;
     let totalLosses = 0;
@@ -146,13 +153,16 @@ export function ColorPredictionUI() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [timeLeft]);
+  }, [timeLeft, user]);
 
   const progress = (timeLeft / BETTING_DURATION) * 100;
   const winRate = totalGames > 0 ? ((totalWins / totalGames) * 100).toFixed(1) : '0.0';
   
   const placeBet = async (key: string) => {
-    if (!user) return;
+    if (!user) {
+        setShowLoginPrompt(true);
+        return;
+    }
     if (timeLeft <= 5) {
         toast({ variant: "destructive", title: "Too Late!", description: "Betting is closed for this round." });
         return;
@@ -192,7 +202,11 @@ export function ColorPredictionUI() {
     return Object.values(activeBets).reduce((sum, amount) => sum + amount, 0);
   };
 
+  const balance = user ? inrBalance : 0;
+
   return (
+    <>
+    <LoginPromptDialog open={showLoginPrompt} onOpenChange={setShowLoginPrompt} />
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-violet-900 to-slate-900 p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header Stats */}
@@ -228,7 +242,7 @@ export function ColorPredictionUI() {
           <Card className="bg-gradient-to-r from-purple-500/10 to-purple-600/10 border-purple-500/20 backdrop-blur-sm">
             <CardContent className="p-4 text-center">
               <Wallet className="w-6 h-6 mx-auto mb-2 text-purple-400" />
-              <p className="text-2xl font-bold text-purple-400">₹{inrBalance.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-purple-400">₹{balance.toLocaleString()}</p>
               <p className="text-xs text-purple-300">Balance</p>
             </CardContent>
           </Card>
@@ -318,7 +332,7 @@ export function ColorPredictionUI() {
                         </div>
                       </motion.div>
                       
-                      {Object.keys(activeBets).length > 0 && (
+                      {user && Object.keys(activeBets).length > 0 && (
                         <div className="mt-4 p-4 rounded-lg bg-slate-700/30">
                           <h4 className="font-semibold text-slate-200 mb-2">Your Bets This Round:</h4>
                           <div className="grid grid-cols-2 gap-2 text-sm">
@@ -483,7 +497,7 @@ export function ColorPredictionUI() {
                     </div>
                     <div className="text-center p-3 rounded-lg bg-slate-700/30 border border-slate-600/50">
                       <div className="text-slate-400">Balance</div>
-                      <div className="text-xl font-bold text-emerald-400">₹{inrBalance.toLocaleString()}</div>
+                      <div className="text-xl font-bold text-emerald-400">₹{balance.toLocaleString()}</div>
                     </div>
                   </div>
                   
@@ -496,7 +510,7 @@ export function ColorPredictionUI() {
                       <span className="text-slate-400">Win Streak</span>
                       <span className="font-semibold text-orange-400">{streak}</span>
                     </div>
-                    {Object.keys(activeBets).length > 0 && (
+                    {user && Object.keys(activeBets).length > 0 && (
                       <div className="mt-4 p-3 rounded-lg bg-violet-500/10 border border-violet-500/20">
                         <h4 className="font-semibold text-violet-300 mb-2">Active Bets:</h4>
                         {Object.entries(activeBets).map(([key, amount]) => (
@@ -645,5 +659,6 @@ export function ColorPredictionUI() {
         </motion.div>
       </div>
     </div>
+    </>
   );
 }

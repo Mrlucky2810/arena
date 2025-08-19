@@ -13,6 +13,7 @@ import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { cn } from '@/lib/utils';
 import { Badge } from '../ui/badge';
+import { LoginPromptDialog } from '../auth/login-prompt-dialog';
 
 const segments = [
     { label: '2x', multiplier: 2, color: 'from-teal-500 to-teal-600', probability: 25, bgColor: 'bg-teal-500' },
@@ -37,6 +38,9 @@ export function SpinWheelGameUI() {
   const [totalGames, setTotalGames] = useState(0);
   const [bestMultiplier, setBestMultiplier] = useState(0);
   const [streak, setStreak] = useState(0);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+
+  const balance = user ? inrBalance : 0;
 
   const logGameResult = async (payout: number, resultLabel: string) => {
     if (!user) return;
@@ -56,7 +60,11 @@ export function SpinWheelGameUI() {
   }
 
   const spinWheel = async () => {
-    if (!user || betAmount > inrBalance) {
+    if (!user) {
+      setShowLoginPrompt(true);
+      return;
+    }
+    if (betAmount > inrBalance) {
       toast({ variant: 'destructive', title: 'Insufficient balance!' });
       return;
     }
@@ -131,6 +139,8 @@ export function SpinWheelGameUI() {
   const winRate = totalGames > 0 ? ((totalWins / totalGames) * 100).toFixed(1) : '0.0';
 
   return (
+    <>
+    <LoginPromptDialog open={showLoginPrompt} onOpenChange={setShowLoginPrompt} />
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header Stats */}
@@ -166,7 +176,7 @@ export function SpinWheelGameUI() {
           <Card className="bg-gradient-to-r from-purple-500/10 to-purple-600/10 border-purple-500/20 backdrop-blur-sm">
             <CardContent className="p-4 text-center">
               <Wallet className="w-6 h-6 mx-auto mb-2 text-purple-400" />
-              <p className="text-2xl font-bold text-purple-400">₹{inrBalance.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-purple-400">₹{balance.toLocaleString()}</p>
               <p className="text-xs text-purple-300">Balance</p>
             </CardContent>
           </Card>
@@ -291,7 +301,7 @@ export function SpinWheelGameUI() {
                     <Button 
                         size="lg" 
                         onClick={spinWheel} 
-                        disabled={isSpinning || betAmount > inrBalance || betAmount <= 0}
+                        disabled={isSpinning || (user && (betAmount > balance || betAmount <= 0))}
                         className={cn(
                           "w-full h-16 text-xl font-bold shadow-2xl transition-all duration-300 relative overflow-hidden group",
                           result && result !== 'Lose' 
@@ -351,7 +361,7 @@ export function SpinWheelGameUI() {
                         key={amount}
                         variant="outline"
                         onClick={() => setBetAmount(amount)}
-                        disabled={isSpinning || amount > inrBalance}
+                        disabled={isSpinning || (user && amount > balance)}
                         className="bg-slate-700/30 border-slate-600 text-slate-200 hover:bg-slate-600/50 hover:border-purple-500"
                         >
                         ₹{amount}
@@ -361,11 +371,11 @@ export function SpinWheelGameUI() {
                     
                     <Button
                       variant="secondary"
-                      onClick={() => setBetAmount(inrBalance)}
-                      disabled={isSpinning}
+                      onClick={() => setBetAmount(balance)}
+                      disabled={isSpinning || !user}
                       className="w-full bg-gradient-to-r from-red-600/20 to-orange-600/20 border-red-500/30 text-red-300 hover:from-red-600/30 hover:to-orange-600/30"
                     >
-                      All In (₹{inrBalance.toLocaleString()})
+                      All In (₹{balance.toLocaleString()})
                     </Button>
                 </CardContent>
                 </Card>
@@ -433,5 +443,6 @@ export function SpinWheelGameUI() {
         </div>
       </div>
     </div>
+    </>
   );
 }

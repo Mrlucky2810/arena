@@ -15,6 +15,7 @@ import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Badge } from '../ui/badge';
+import { LoginPromptDialog } from '../auth/login-prompt-dialog';
 
 const DiceFace = ({ number, isRolling }: { number: number | null; isRolling: boolean }) => {
     const dotsConfig = [
@@ -93,9 +94,10 @@ export function DiceGameUI() {
     const [totalWins, setTotalWins] = useState(0);
     const [totalGames, setTotalGames] = useState(0);
     const [rollingNumber, setRollingNumber] = useState<number | null>(null);
+    const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
-    const selectedBalance = wallet === 'inr' ? inrBalance : (wallets ? wallets[wallet] || 0 : 0);
-    const hasCryptoWallets = wallets && Object.keys(wallets).length > 0;
+    const selectedBalance = user ? (wallet === 'inr' ? inrBalance : (wallets ? wallets[wallet] || 0 : 0)) : 0;
+    const hasCryptoWallets = user && wallets && Object.keys(wallets).length > 0;
 
 
     const logGameResult = async (payout: number, result: number) => {
@@ -118,7 +120,10 @@ export function DiceGameUI() {
     }
 
     const rollDice = async () => {
-        if (!user) return;
+        if (!user) {
+            setShowLoginPrompt(true);
+            return;
+        }
         if (betAmount <= 0) {
             toast({ variant: "destructive", title: "Invalid Amount", description: "Bet amount must be positive." });
             return;
@@ -184,6 +189,8 @@ export function DiceGameUI() {
     const winRate = totalGames > 0 ? ((totalWins / totalGames) * 100).toFixed(1) : '0.0';
 
     return (
+        <>
+        <LoginPromptDialog open={showLoginPrompt} onOpenChange={setShowLoginPrompt} />
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-900 to-slate-900 p-4">
             <div className="max-w-7xl mx-auto">
                 {/* Header Stats */}
@@ -340,7 +347,7 @@ export function DiceGameUI() {
                                                 : 'bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700'
                                         )} 
                                         onClick={rollDice} 
-                                        disabled={isRolling || betAmount <= 0 || betAmount > selectedBalance}
+                                        disabled={isRolling || (user && (betAmount <= 0 || betAmount > selectedBalance))}
                                     >
                                         <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
                                         <span className="relative z-10 flex items-center justify-center gap-3">
@@ -522,7 +529,7 @@ export function DiceGameUI() {
                                         variant="outline" 
                                         className="w-full bg-gradient-to-r from-red-600/20 to-orange-600/20 border-red-500/30 text-red-300 hover:from-red-600/30 hover:to-orange-600/30" 
                                         onClick={() => setBetAmount(selectedBalance)} 
-                                        disabled={isRolling}
+                                        disabled={isRolling || !user}
                                     >
                                         All In ({selectedBalance.toLocaleString()})
                                     </Button>
@@ -629,5 +636,6 @@ export function DiceGameUI() {
                 </motion.div>
             </div>
         </div>
+        </>
     );
 }

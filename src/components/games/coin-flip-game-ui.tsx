@@ -15,6 +15,7 @@ import { cn } from '@/lib/utils';
 import { Badge } from '../ui/badge';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
+import { LoginPromptDialog } from '../auth/login-prompt-dialog';
 
 export const CoinFlipGameUI = () => {
   const { user, inrBalance, wallets, updateBalance } = useAuth();
@@ -28,9 +29,10 @@ export const CoinFlipGameUI = () => {
   const [totalWins, setTotalWins] = useState(0);
   const [totalGames, setTotalGames] = useState(0);
   const [wallet, setWallet] = useState('inr');
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
-  const selectedBalance = wallet === 'inr' ? inrBalance : (wallets ? wallets[wallet] || 0 : 0);
-  const hasCryptoWallets = wallets && Object.keys(wallets).length > 0;
+  const selectedBalance = user ? (wallet === 'inr' ? inrBalance : (wallets ? wallets[wallet] || 0 : 0)) : 0;
+  const hasCryptoWallets = user && wallets && Object.keys(wallets).length > 0;
 
   const logGameResult = async (payout: number, result: 'heads' | 'tails') => {
     if (!user) return;
@@ -53,7 +55,7 @@ export const CoinFlipGameUI = () => {
 
   const flipCoin = async () => {
     if (!user) {
-        toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to play.' });
+        setShowLoginPrompt(true);
         return;
     }
     if (betAmount > selectedBalance) {
@@ -113,6 +115,8 @@ export const CoinFlipGameUI = () => {
   const winRate = totalGames > 0 ? ((totalWins / totalGames) * 100).toFixed(1) : '0.0';
 
   return (
+    <>
+    <LoginPromptDialog open={showLoginPrompt} onOpenChange={setShowLoginPrompt} />
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900 p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header Stats */}
@@ -312,7 +316,7 @@ export const CoinFlipGameUI = () => {
                     <Button
                         size="lg"
                         onClick={flipCoin}
-                        disabled={isFlipping || betAmount > selectedBalance || betAmount <= 0}
+                        disabled={isFlipping || (user && (betAmount > selectedBalance || betAmount <= 0))}
                         className={cn(
                           "w-full h-16 text-xl font-bold shadow-2xl transition-all duration-300 relative overflow-hidden group",
                           gameResult === 'win' 
@@ -501,7 +505,7 @@ export const CoinFlipGameUI = () => {
                         key={amount}
                         variant="outline"
                         onClick={() => setBetAmount(amount)}
-                        disabled={isFlipping || amount > selectedBalance}
+                        disabled={isFlipping || (user && amount > selectedBalance)}
                         className="bg-slate-700/30 border-slate-600 text-slate-200 hover:bg-slate-600/50 hover:border-purple-500"
                         >
                         {wallet === 'inr' ? '₹' : ''}{amount}
@@ -512,7 +516,7 @@ export const CoinFlipGameUI = () => {
                     <Button
                       variant="secondary"
                       onClick={() => setBetAmount(selectedBalance)}
-                      disabled={isFlipping || selectedBalance === 0}
+                      disabled={isFlipping || !user || selectedBalance === 0}
                       className="w-full bg-gradient-to-r from-red-600/20 to-orange-600/20 border-red-500/30 text-red-300 hover:from-red-600/30 hover:to-orange-600/30"
                     >
                       All In ({selectedBalance.toLocaleString()})
@@ -616,5 +620,6 @@ export const CoinFlipGameUI = () => {
         </motion.div>
       </div>
     </div>
+    </>
   );
 };

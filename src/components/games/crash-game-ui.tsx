@@ -14,6 +14,7 @@ import { addDoc, collection, doc, onSnapshot, serverTimestamp, updateDoc, setDoc
 import { db } from "@/lib/firebase";
 import { motion, AnimatePresence } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
+import { LoginPromptDialog } from "../auth/login-prompt-dialog";
 
 type GameState = "waiting" | "in-flight" | "crashed";
 type PlayerState = "betting" | "playing" | "cashed_out" | "lost";
@@ -101,12 +102,14 @@ export function CrashGameUI() {
   const [totalWins, setTotalWins] = useState(0);
   const [totalGames, setTotalGames] = useState(0);
   const [bestMultiplier, setBestMultiplier] = useState(0);
+  const [showLoginPrompt, setShowLoginPrompt] = useState(false);
 
   // Shared game state from Firestore
   const [gameState, setGameState] = useState<CrashGameState | null>(null);
   const [currentMultiplier, setCurrentMultiplier] = useState(1.00);
 
   const isAdmin = userData?.role === 'admin';
+  const balance = user ? inrBalance : 0;
 
   useEffect(() => {
     const gameDocRef = doc(db, "crash_game", "current_round");
@@ -143,7 +146,7 @@ export function CrashGameUI() {
          if(playerState === 'playing') {
             setPlayerState('lost');
             setTotalGames(prev => prev + 1);
-            logGameResult(-betAmount, null, gameState.crashPoint);
+            if(user) logGameResult(-betAmount, null, gameState.crashPoint);
         }
     } else if (gameState.status === 'in-flight') {
         const startTime = gameState.startTime?.toDate();
@@ -158,7 +161,7 @@ export function CrashGameUI() {
     }
     
     return () => clearInterval(intervalId);
-  }, [gameState, playerState, betAmount]);
+  }, [gameState, playerState, betAmount, user]);
 
   const potentialWin = betAmount * currentMultiplier;
   const winRate = totalGames > 0 ? ((totalWins / totalGames) * 100).toFixed(1) : '0.0';
@@ -183,7 +186,10 @@ export function CrashGameUI() {
   };
 
   const handlePlaceBet = async () => {
-    if (!user) return;
+    if (!user) {
+        setShowLoginPrompt(true);
+        return;
+    };
     if (gameState?.status !== "waiting") {
         toast({ variant: 'destructive', title: "Too late!", description: "Bets are locked. Please wait for the next round." });
         return;
@@ -260,7 +266,7 @@ export function CrashGameUI() {
                   onClick={handlePlaceBet} 
                   size="lg" 
                   className="w-full h-16 text-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 shadow-lg hover:shadow-blue-500/50 transition-all"
-                  disabled={!gameState || gameState.status !== 'waiting' || betAmount <= 0 || betAmount > inrBalance}
+                  disabled={!gameState || gameState.status !== 'waiting' || betAmount <= 0 || (user && betAmount > balance)}
                 >
                     <Rocket className="mr-2" />
                     Place Bet (₹{betAmount})
@@ -339,6 +345,8 @@ export function CrashGameUI() {
   }, [currentMultiplier, gameState]);
 
   return (
+    <>
+    <LoginPromptDialog open={showLoginPrompt} onOpenChange={setShowLoginPrompt} />
     <div className="min-h-screen bg-gradient-to-br from-slate-900 via-blue-900 to-slate-900 p-4">
       <div className="max-w-7xl mx-auto">
         {/* Header Stats */}
@@ -374,7 +382,7 @@ export function CrashGameUI() {
           <Card className="bg-gradient-to-r from-purple-500/10 to-purple-600/10 border-purple-500/20 backdrop-blur-sm">
             <CardContent className="p-4 text-center">
               <Wallet className="w-6 h-6 mx-auto mb-2 text-purple-400" />
-              <p className="text-2xl font-bold text-purple-400">₹{inrBalance.toLocaleString()}</p>
+              <p className="text-2xl font-bold text-purple-400">₹{balance.toLocaleString()}</p>
               <p className="text-xs text-purple-300">Balance</p>
             </CardContent>
           </Card>
@@ -582,10 +590,10 @@ export function CrashGameUI() {
                   <Button
                     variant="secondary"
                     className="w-full bg-gradient-to-r from-red-600/20 to-orange-600/20 border-red-500/30 text-red-300 hover:from-red-600/30 hover:to-orange-600/30"
-                    onClick={() => setBetAmount(inrBalance)}
-                    disabled={playerState !== "betting"}
+                    onClick={() => setBetAmount(balance)}
+                    disabled={playerState !== "betting" || !user}
                   >
-                    All In (₹{inrBalance.toLocaleString()})
+                    All In (₹{balance.toLocaleString()})
                   </Button>
                 </CardContent>
               </Card>
@@ -760,5 +768,6 @@ export function CrashGameUI() {
         }
       `}</style>
     </div>
+    </>
   );
 }

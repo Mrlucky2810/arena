@@ -1,3 +1,4 @@
+
 "use client"
 
 import { useState, useEffect, useMemo } from 'react';
@@ -13,6 +14,7 @@ import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Badge } from '@/components/ui/badge';
+import { LoginPromptDialog } from '../auth/login-prompt-dialog';
 
 interface Tile {
   id: number;
@@ -34,6 +36,9 @@ export function MineSweeperGameUI() {
     const [totalGames, setTotalGames] = useState(0);
     const [bestMultiplier, setBestMultiplier] = useState(0);
     const [streak, setStreak] = useState(0);
+    const [showLoginPrompt, setShowLoginPrompt] = useState(false);
+
+    const balance = user ? inrBalance : 0;
 
     const logGameResult = async (payout: number, reason: 'cash_out' | 'mine' | 'perfect') => {
         if (!user) return;
@@ -90,7 +95,10 @@ export function MineSweeperGameUI() {
     const winRate = totalGames > 0 ? ((totalWins / totalGames) * 100).toFixed(1) : '0.0';
 
     const handleStartGame = async () => {
-        if (!user) return;
+        if (!user) {
+            setShowLoginPrompt(true);
+            return;
+        }
          if (betAmount <= 0) {
             toast({ variant: "destructive", title: "Invalid Amount", description: "Bet amount must be positive." });
             return;
@@ -195,6 +203,8 @@ export function MineSweeperGameUI() {
     const difficulty = getDifficultyLabel();
 
     return (
+        <>
+        <LoginPromptDialog open={showLoginPrompt} onOpenChange={setShowLoginPrompt} />
         <div className="min-h-screen bg-gradient-to-br from-slate-900 via-emerald-900 to-slate-900 p-4">
             <div className="max-w-7xl mx-auto">
                 {/* Header Stats */}
@@ -230,7 +240,7 @@ export function MineSweeperGameUI() {
                     <Card className="bg-gradient-to-r from-purple-500/10 to-purple-600/10 border-purple-500/20 backdrop-blur-sm">
                         <CardContent className="p-4 text-center">
                             <Wallet className="w-6 h-6 mx-auto mb-2 text-purple-400" />
-                            <p className="text-2xl font-bold text-purple-400">₹{inrBalance.toLocaleString()}</p>
+                            <p className="text-2xl font-bold text-purple-400">₹{balance.toLocaleString()}</p>
                             <p className="text-xs text-purple-300">Balance</p>
                         </CardContent>
                     </Card>
@@ -311,7 +321,7 @@ export function MineSweeperGameUI() {
                                             size="lg" 
                                             className="w-full bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-700 hover:to-green-700" 
                                             onClick={handleStartGame} 
-                                            disabled={betAmount > inrBalance || betAmount <= 0}
+                                            disabled={user && (betAmount > balance || betAmount <= 0)}
                                         >
                                             <Shield className="mr-2 h-4 w-4" />
                                             Start Mining (₹{betAmount})
@@ -366,7 +376,7 @@ export function MineSweeperGameUI() {
                                 <div className="space-y-2 text-sm">
                                     <div className="flex justify-between items-center">
                                         <span className="text-slate-400">Balance</span>
-                                        <span className="font-semibold text-slate-200">₹{inrBalance.toLocaleString()}</span>
+                                        <span className="font-semibold text-slate-200">₹{balance.toLocaleString()}</span>
                                     </div>
                                     <div className="flex justify-between items-center">
                                         <span className="text-slate-400">Potential Net Win</span>
@@ -630,5 +640,6 @@ export function MineSweeperGameUI() {
                 </motion.div>
             </div>
         </div>
+        </>
     );
 }
