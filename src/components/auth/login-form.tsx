@@ -17,15 +17,13 @@ import { Input } from "@/components/ui/input";
 import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Separator } from "../ui/separator";
-import { Chrome, Facebook } from "lucide-react";
 import { useAuth } from "@/context/auth-context";
 import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 
 const formSchema = z.object({
-  email: z.string().email({ message: "Invalid email address." }),
-  password: z.string().min(6, { message: "Password must be at least 6 characters." }),
+  email: z.string().min(1, "Email is required").email({ message: "Invalid email address." }),
+  password: z.string().min(1, "Password is required").min(6, { message: "Password must be at least 6 characters." }),
   remember: z.boolean().optional(),
 });
 
@@ -124,24 +122,6 @@ export function LoginForm() {
         <Button type="submit" className="w-full !mt-6" size="lg" disabled={isSubmitting}>
           {isSubmitting ? "Logging in..." : "Log In"}
         </Button>
-
-        <div className="relative my-6">
-          <Separator />
-          <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
-          </div>
-          <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-card px-2 text-muted-foreground">
-              Or continue with
-            </span>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 gap-4">
-          <Button variant="outline"><Chrome className="mr-2 h-4 w-4" /> Google</Button>
-          <Button variant="outline"><Facebook className="mr-2 h-4 w-4" /> Facebook</Button>
-        </div>
-
       </form>
     </Form>
   );

@@ -1,6 +1,6 @@
 
 import type { LucideIcon } from "lucide-react";
-import { Coins, Crown, Gamepad2, Gem, Handshake, ShieldCheck, Rocket, Gift, Percent, Star, Users, LayoutDashboard, Home, LifeBuoy, MessagesSquare } from "lucide-react";
+import { Coins, Crown, Gamepad2, Gem, Handshake, ShieldCheck, Rocket, Gift, Percent, Star, Users, LayoutDashboard, Home, LifeBuoy, MessagesSquare, Trophy } from "lucide-react";
 
 export type Game = {
   name: string;

@@ -1,3 +1,4 @@
+
 'use client';
 
 import Link from 'next/link';
@@ -30,16 +31,18 @@ export function MobileBottomNav() {
             if (item.isCentral) {
               return (
                 <div key={item.href} className="flex items-center justify-center">
-                  <Button 
-                    asChild 
-                    size="lg" 
-                    className="rounded-full w-14 h-14 -mt-6 shadow-lg shadow-primary/40 bg-gradient-to-tr from-primary to-accent hover:from-primary/90 hover:to-accent/90 border-4 border-background"
-                  >
-                    <Link href={item.href} className="flex flex-col items-center justify-center text-primary-foreground">
-                      <item.icon className="w-6 h-6" />
-                      <span className="sr-only">{item.label}</span>
+                    <Link href={item.href} className="-mt-6">
+                      <Button 
+                        asChild 
+                        size="lg" 
+                        className="rounded-full w-14 h-14 shadow-lg shadow-primary/40 bg-gradient-to-tr from-primary to-accent hover:from-primary/90 hover:to-accent/90 border-4 border-background"
+                      >
+                          <div className="flex flex-col items-center justify-center text-primary-foreground">
+                              <item.icon className="w-6 h-6" />
+                              <span className="sr-only">{item.label}</span>
+                          </div>
+                      </Button>
                     </Link>
-                  </Button>
                 </div>
               );
             }

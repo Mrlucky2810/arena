@@ -142,7 +142,7 @@ export default function DashboardPage() {
         <Carousel opts={{ align: "start", loop: true }} className="w-full">
           <CarouselContent className="-ml-2 md:-ml-4">
             {trendingGames.map((game, index) => (
-              <CarouselItem key={game.name} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3 xl:basis-1/4">
+              <CarouselItem key={game.name} className="pl-2 md:pl-4 basis-full sm:basis-1/2 lg:basis-1/3">
                 <motion.div
                   initial={{ opacity: 0, scale: 0.9 }}
                   animate={{ opacity: 1, scale: 1 }}

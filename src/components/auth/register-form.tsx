@@ -21,10 +21,10 @@ import { useToast } from "@/hooks/use-toast";
 import { useState } from "react";
 
 const formSchema = z.object({
-  name: z.string().min(2, "Name is too short"),
-  email: z.string().email("Invalid email"),
-  password: z.string().min(8, "Password must be at least 8 characters"),
-  confirmPassword: z.string(),
+  name: z.string().min(1, "Name is required").min(2, "Name is too short"),
+  email: z.string().min(1, "Email is required").email("Invalid email"),
+  password: z.string().min(1, "Password is required").min(8, "Password must be at least 8 characters"),
+  confirmPassword: z.string().min(1, "Please confirm your password"),
   referralCode: z.string().optional(),
   terms: z.boolean().refine((val) => val === true, {
     message: "You must accept the terms and conditions.",
@@ -96,7 +96,7 @@ export function RegisterForm({ isAdminRegistration = false }: { isAdminRegistrat
             <FormItem className="sm:col-span-1"><FormLabel>Confirm Password</FormLabel><FormControl><Input type="password" placeholder="••••••••" {...field} /></FormControl><FormMessage /></FormItem>
         )} />
         {!isAdminRegistration && <FormField control={form.control} name="referralCode" render={({ field }) => (
-            <FormItem className="sm:col-span-2"><FormLabel>Referral Code (Optional)</FormLabel><FormControl><Input placeholder="Enter referrer's name" {...field} /></FormControl><FormMessage /></FormItem>
+            <FormItem className="sm:col-span-2"><FormLabel>Referral Code (Optional)</FormLabel><FormControl><Input placeholder="Enter referral code" {...field} /></FormControl><FormMessage /></FormItem>
         )} />}
         <FormField control={form.control} name="terms" render={({ field }) => (
             <FormItem className="sm:col-span-2 flex flex-row items-start space-x-3 space-y-0 rounded-md border p-4"><FormControl><Checkbox checked={field.value} onCheckedChange={field.onChange} /></FormControl>

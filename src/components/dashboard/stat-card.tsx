@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/context/auth-context";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { collection, query, where, getDocs, limit } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import { ArrowDownRight, ArrowUpRight, Users, Wallet } from "lucide-react";
@@ -15,14 +15,19 @@ type StatCardProps = {
 };
 
 export function StatCard({ type }: StatCardProps) {
-  const { user, userData, loading, inrBalance, cryptoBalance } = useAuth();
+  const { user, userData, loading, inrBalance, wallets } = useAuth();
   const [pnl, setPnl] = useState(0);
   const [referralEarnings, setReferralEarnings] = useState(0);
   const [totalReferrals, setTotalReferrals] = useState(0);
   const [pnlLoading, setPnlLoading] = useState(true);
   const [referralLoading, setReferralLoading] = useState(true);
 
-  const totalBalance = inrBalance + cryptoBalance;
+  const cryptoTotal = useMemo(() => {
+    if (!wallets) return 0;
+    return Object.values(wallets).reduce((acc, balance) => acc + (balance || 0), 0);
+  }, [wallets]);
+
+  const totalBalance = (inrBalance || 0) + cryptoTotal;
 
   useEffect(() => {
     if (user && userData) {
@@ -78,6 +83,7 @@ export function StatCard({ type }: StatCardProps) {
           icon: Wallet,
           iconClassName: "",
           isLoading: loading,
+          description: "Combined INR & Crypto Balance"
       },
       pnl: {
           title: "Today's P&L",
@@ -85,37 +91,41 @@ export function StatCard({ type }: StatCardProps) {
           icon: pnlIsPositive ? ArrowUpRight : ArrowDownRight,
           iconClassName: pnlIsPositive ? "text-emerald-500" : "text-red-500",
           isLoading: pnlLoading,
+          description: "Profit/Loss in last 24h"
       },
       referral: {
           title: "Referral Earnings",
-          value: `₹${referralEarnings.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
+          value: `₹${(referralEarnings || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
           icon: Wallet,
           iconClassName: "",
           isLoading: referralLoading,
+          description: "Total earnings from referrals"
       },
       'total-referrals': {
           title: "Total Referrals",
-          value: totalReferrals.toLocaleString(),
+          value: (totalReferrals || 0).toLocaleString(),
           icon: Users,
           iconClassName: "",
           isLoading: referralLoading,
+          description: "Users you have referred"
       }
   }
 
   const currentCard = cardData[type];
   if (!currentCard) return null; // Should not happen with TS, but safe for JS
   
-  const { title, value, icon: Icon, iconClassName, isLoading } = currentCard;
+  const { title, value, icon: Icon, iconClassName, isLoading, description } = currentCard;
 
-  if (isLoading) {
+  if (isLoading || loading) {
     return (
         <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                 <CardTitle className="text-sm font-medium">{title}</CardTitle>
-                 <Skeleton className="h-4 w-4" />
+                 <Skeleton className="h-4 w-4 rounded-full" />
             </CardHeader>
             <CardContent>
                 <Skeleton className="h-8 w-2/3" />
+                <Skeleton className="h-4 w-1/2 mt-2" />
             </CardContent>
         </Card>
     )
@@ -129,6 +139,7 @@ export function StatCard({ type }: StatCardProps) {
       </CardHeader>
       <CardContent>
         <div className="text-xl sm:text-2xl font-bold">{user ? value : 'Log in to see'}</div>
+        <p className="text-xs text-muted-foreground">{description}</p>
       </CardContent>
     </Card>
   );

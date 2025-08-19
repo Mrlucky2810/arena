@@ -3,22 +3,22 @@
 
 import { useRouter } from 'next/navigation';
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, type User } from 'firebase/auth';
+import { onAuthStateChanged, signInWithEmailAndPassword, createUserWithEmailAndPassword, signOut, type User, EmailAuthProvider, reauthenticateWithCredential, updatePassword } from 'firebase/auth';
 import { auth, db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, serverTimestamp, updateDoc, increment, onSnapshot, collection, query, where, getDocs, writeBatch, addDoc } from 'firebase/firestore';
-
-type WalletType = 'inr' | 'crypto';
+import { doc, getDoc, setDoc, serverTimestamp, updateDoc, increment, onSnapshot, collection, query, where, getDocs, writeBatch } from 'firebase/firestore';
 
 interface UserData {
     name: string;
     email: string;
     inrBalance: number;
-    cryptoBalance: number;
+    wallets: { [key: string]: number };
     role?: 'user' | 'admin';
     status?: 'active' | 'blocked';
     referralCode?: string;
     referralEarnings?: number;
     referredBy?: string;
+    avatarUrl?: string;
+    firstDepositMade?: boolean;
 }
 
 interface AuthResponse {
@@ -31,14 +31,15 @@ interface AuthContextType {
   user: User | null;
   userData: UserData | null;
   inrBalance: number;
-  cryptoBalance: number;
-  updateBalance: (userId: string, amount: number, wallet: WalletType) => Promise<void>;
+  wallets: { [key: string]: number } | null;
+  updateBalance: (userId: string, amount: number, currency: string) => Promise<void>;
   login: (email: string, pass: string) => Promise<AuthResponse>;
   register: (name: string, email: string, pass: string, referralCode?: string, role?: 'user' | 'admin') => Promise<AuthResponse>;
   logout: () => void;
   loading: boolean;
   adminExists: boolean;
   loadingAdminCheck: boolean;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<AuthResponse>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -56,7 +57,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [userData, setUserData] = useState<UserData | null>(null);
   const [inrBalance, setInrBalance] = useState(0);
-  const [cryptoBalance, setCryptoBalance] = useState(0);
+  const [wallets, setWallets] = useState<{ [key: string]: number } | null>(null);
   const [loading, setLoading] = useState(true);
   const [adminExists, setAdminExists] = useState(false);
   const [loadingAdminCheck, setLoadingAdminCheck] = useState(true);
@@ -97,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
                 setUser(user);
                 setUserData(dbData);
                 setInrBalance(dbData.inrBalance || 0);
-                setCryptoBalance(dbData.cryptoBalance || 0);
+                setWallets(dbData.wallets || {});
             } else {
                 signOut(auth);
             }
@@ -112,7 +113,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setUser(null);
         setUserData(null);
         setInrBalance(0);
-        setCryptoBalance(0);
+        setWallets(null);
         setLoading(false);
       }
 
@@ -145,10 +146,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       return { success: true, role: role };
     } catch (error: any) {
       console.error("Login failed:", error);
-      if (error.code === 'auth/invalid-credential' || error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password') {
-        return { success: false, message: "Invalid email or password." };
+      switch (error.code) {
+        case 'auth/invalid-credential':
+        case 'auth/user-not-found':
+        case 'auth/wrong-password':
+          return { success: false, message: "Invalid email or password." };
+        case 'auth/too-many-requests':
+          return { success: false, message: "Too many failed attempts. Please try again later." };
+        case 'auth/network-request-failed':
+          return { success: false, message: "Network error. Please check your connection." };
+        default:
+          return { success: false, message: "An error occurred during login. Please try again." };
       }
-      return { success: false, message: "An unknown error occurred during login." };
     }
   };
   
@@ -161,37 +170,35 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           return { success: false, message: "An admin account already exists." };
       }
 
+      let referrerId: string | null = null;
+      if (referralCode) {
+        const usersRef = collection(db, 'users');
+        const q = query(usersRef, where('referralCode', '==', referralCode.trim()));
+        const querySnapshot = await getDocs(q);
+
+        if (!querySnapshot.empty) {
+          const referrerDoc = querySnapshot.docs[0];
+          referrerId = referrerDoc.id;
+        } else {
+            return { success: false, message: "Invalid referral code." };
+        }
+      }
+
       const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
       const newUser = userCredential.user;
-      
-      let initialInrBalance = 0;
-      let referrerDocRef = null;
-      let referrerId: string | null = null;
-      const referralReward = 150;
-
-      if (referralCode) {
-          const usersRef = collection(db, 'users');
-          const q = query(usersRef, where('referralCode', '==', referralCode));
-          const querySnapshot = await getDocs(q);
-
-          if (!querySnapshot.empty) {
-              const referrerDoc = querySnapshot.docs[0];
-              referrerDocRef = referrerDoc.ref;
-              referrerId = referrerDoc.id;
-              initialInrBalance = referralReward;
-          }
-      }
 
       const newUserDoc: UserData = {
         name: name,
         email: newUser.email!,
-        inrBalance: initialInrBalance,
-        cryptoBalance: 0,
+        inrBalance: 0,
+        wallets: {},
         role: role,
         status: 'active',
         referralCode: generateReferralCode(),
         referralEarnings: 0,
         referredBy: referrerId,
+        avatarUrl: '/user.jpg',
+        firstDepositMade: false,
       };
 
       const newUserDocRef = doc(db, "users", newUser.uid);
@@ -201,21 +208,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ...newUserDoc,
         createdAt: serverTimestamp(),
       });
-
-      if(referrerDocRef && referrerId) {
-        batch.update(referrerDocRef, { 
-            inrBalance: increment(referralReward),
-            referralEarnings: increment(referralReward)
-        });
-        // Log the referral transaction
-        const referralLogRef = doc(collection(db, "referrals"));
-        batch.set(referralLogRef, {
-            referrerId: referrerId,
-            referredId: newUser.uid,
-            amount: referralReward,
-            createdAt: serverTimestamp(),
-        });
-      }
 
       if(role === 'admin') {
         batch.set(adminMarkerRef, { uid: newUser.uid, createdAt: serverTimestamp() });
@@ -242,10 +234,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     router.replace('/login');
   };
 
-  const updateBalance = async (userId: string, amount: number, wallet: WalletType) => {
+  const updateBalance = async (userId: string, amount: number, currency: string) => {
     const userDocRef = doc(db, "users", userId);
     try {
-        const balanceFieldToUpdate = wallet === 'inr' ? 'inrBalance' : 'cryptoBalance';
+        const balanceFieldToUpdate = currency.toLowerCase() === 'inr' 
+            ? 'inrBalance' 
+            : `wallets.${currency.toLowerCase()}`;
         
         await updateDoc(userDocRef, { [balanceFieldToUpdate]: increment(amount) });
     } catch (error) {
@@ -254,9 +248,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const changePassword = async (currentPassword: string, newPassword: string): Promise<AuthResponse> => {
+    if (!user || !user.email) {
+      return { success: false, message: "No user is currently signed in." };
+    }
+
+    const credential = EmailAuthProvider.credential(user.email, currentPassword);
+
+    try {
+      await reauthenticateWithCredential(user, credential);
+      await updatePassword(user, newPassword);
+      return { success: true, message: "Password updated successfully!" };
+    } catch (error: any) {
+      console.error("Password change failed:", error);
+      if (error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {
+        return { success: false, message: "The current password you entered is incorrect." };
+      }
+      if (error.code === 'auth/weak-password') {
+        return { success: false, message: "The new password is too weak. It must be at least 8 characters long." };
+      }
+      return { success: false, message: "An error occurred while changing the password." };
+    }
+  };
+
 
   return (
-    <AuthContext.Provider value={{ user, userData, login, register, logout, loading, inrBalance, cryptoBalance, updateBalance, adminExists, loadingAdminCheck }}>
+    <AuthContext.Provider value={{ user, userData, login, register, logout, loading, inrBalance, wallets, updateBalance, adminExists, loadingAdminCheck, changePassword }}>
       {children}
     </AuthContext.Provider>
   );

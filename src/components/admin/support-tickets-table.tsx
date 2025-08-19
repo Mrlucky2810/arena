@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { Check, Mail, MessageSquare, User, Clock } from 'lucide-react';
+import { Skeleton } from '../ui/skeleton';
 
 interface SupportTicket {
     id: string;
@@ -60,6 +61,24 @@ export function SupportTicketsTable() {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not update ticket status.' });
         }
     };
+    
+    if (loading) {
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Support Tickets</CardTitle>
+                    <CardDescription>View and manage user support requests.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-2">
+                        {[...Array(5)].map((_, i) => (
+                            <Skeleton key={i} className="h-12 w-full" />
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
 
     return (
         <Card>
@@ -68,7 +87,7 @@ export function SupportTicketsTable() {
                 <CardDescription>View and manage user support requests.</CardDescription>
             </CardHeader>
             <CardContent>
-                {loading ? <p>Loading tickets...</p> : tickets.length > 0 ? (
+                {tickets.length > 0 ? (
                     <Accordion type="multiple" className="w-full">
                         {tickets.map((ticket) => (
                             <AccordionItem key={ticket.id} value={ticket.id}>

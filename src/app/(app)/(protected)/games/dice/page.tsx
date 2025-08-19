@@ -1,4 +1,3 @@
-
 'use client'
 
 import { DiceGame } from "@/components/games/dice-game";

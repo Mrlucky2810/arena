@@ -3,13 +3,28 @@
 
 import { useEffect, useState } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, query, where, getDocs, doc, updateDoc, getDoc, increment } from 'firebase/firestore';
+import { collection, query, where, getDocs, doc, updateDoc, getDoc, increment, writeBatch, Timestamp, serverTimestamp } from 'firebase/firestore';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { CheckCircle, XCircle } from 'lucide-react';
+import { Skeleton } from '../ui/skeleton';
+
+interface UserData {
+    name: string;
+    email: string;
+    inrBalance: number;
+    wallets: { [key: string]: number };
+    role?: 'user' | 'admin';
+    status?: 'active' | 'blocked';
+    referralCode?: string;
+    referralEarnings?: number;
+    referredBy?: string;
+    avatarUrl?: string;
+    firstDepositMade?: boolean;
+}
 
 interface DepositRequest {
     id: string;
@@ -18,6 +33,7 @@ interface DepositRequest {
     status: 'pending' | 'approved' | 'rejected';
     transactionId: string;
     type: 'inr' | 'crypto';
+    currency?: string;
     createdAt: any;
     userEmail?: string;
 }
@@ -60,13 +76,52 @@ export function DepositRequests() {
         if (!request) return;
 
         try {
-            const requestRef = doc(db, 'deposits', requestId);
-            await updateDoc(requestRef, { status: newStatus });
-
             if (newStatus === 'approved') {
                 const userDocRef = doc(db, 'users', request.userId);
-                const balanceField = request.type === 'inr' ? 'inrBalance' : 'cryptoBalance';
-                await updateDoc(userDocRef, { [balanceField]: increment(request.amount) });
+                const userDocSnap = await getDoc(userDocRef);
+
+                const batch = writeBatch(db);
+                const requestRef = doc(db, 'deposits', requestId);
+                batch.update(requestRef, { status: newStatus });
+
+                // Update user's balance
+                if (request.type === 'inr') {
+                    batch.update(userDocRef, { 'inrBalance': increment(request.amount) });
+                } else if (request.type === 'crypto' && request.currency) {
+                    const walletField = `wallets.${request.currency}`;
+                    batch.update(userDocRef, { [walletField]: increment(request.amount) });
+                }
+
+                // Referral reward logic
+                if (request.type === 'inr' && userDocSnap.exists()) {
+                    const userData = userDocSnap.data() as UserData;
+                    if (!userData.firstDepositMade && userData.referredBy) {
+                        const referrerDocRef = doc(db, 'users', userData.referredBy);
+                        const rewardAmount = request.amount * 0.0010; // 0.10%
+
+                        if (rewardAmount > 0) {
+                            batch.update(referrerDocRef, {
+                                inrBalance: increment(rewardAmount),
+                                referralEarnings: increment(rewardAmount)
+                            });
+                            const referralLogRef = doc(collection(db, "referrals"));
+                            batch.set(referralLogRef, {
+                                referrerId: userData.referredBy,
+                                referredId: request.userId,
+                                amount: rewardAmount,
+                                depositId: requestId,
+                                createdAt: serverTimestamp(),
+                            });
+                        }
+                        batch.update(userDocRef, { firstDepositMade: true });
+                    }
+                }
+                
+                await batch.commit();
+
+            } else { // For 'rejected' status
+                const requestRef = doc(db, 'deposits', requestId);
+                await updateDoc(requestRef, { status: newStatus });
             }
             
             toast({ title: 'Success', description: `Request has been ${newStatus}.` });
@@ -77,6 +132,24 @@ export function DepositRequests() {
         }
     };
 
+    if (loading) {
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Manage Deposit Requests</CardTitle>
+                    <CardDescription>Review and approve or reject user deposit requests.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-2">
+                        {[...Array(5)].map((_, i) => (
+                            <Skeleton key={i} className="h-12 w-full" />
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
+
     return (
         <Card>
             <CardHeader>
@@ -84,40 +157,41 @@ export function DepositRequests() {
                 <CardDescription>Review and approve or reject user deposit requests.</CardDescription>
             </CardHeader>
             <CardContent>
-                {loading ? <p>Loading requests...</p> : (
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>User Email</TableHead>
-                                <TableHead>Amount</TableHead>
-                                <TableHead>Type</TableHead>
-                                <TableHead>Transaction ID</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>User Email</TableHead>
+                            <TableHead>Amount</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Transaction ID</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {requests.length > 0 ? requests.map(req => (
+                            <TableRow key={req.id}>
+                                <TableCell>{req.userEmail || req.userId}</TableCell>
+                                <TableCell>{req.type === 'inr' ? `₹${req.amount.toLocaleString()}` : `${req.amount} ${req.currency?.toUpperCase()}`}</TableCell>
+                                <TableCell><Badge variant="outline">{req.type.toUpperCase()}</Badge></TableCell>
+                                <TableCell className="font-mono text-xs">{req.transactionId}</TableCell>
+                                <TableCell><Badge>{req.status}</Badge></TableCell>
+                                <TableCell className="text-right space-x-2">
+                                    <Button size="icon" variant="outline" className="text-emerald-500 hover:text-emerald-600" onClick={() => handleRequest(req.id, 'approved')}>
+                                        <CheckCircle className="w-4 h-4" />
+                                    </Button>
+                                    <Button size="icon" variant="outline" className="text-red-500 hover:text-red-600" onClick={() => handleRequest(req.id, 'rejected')}>
+                                        <XCircle className="w-4 h-4" />
+                                    </Button>
+                                </TableCell>
                             </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {requests.map(req => (
-                                <TableRow key={req.id}>
-                                    <TableCell>{req.userEmail || req.userId}</TableCell>
-                                    <TableCell>₹{req.amount.toLocaleString()}</TableCell>
-                                    <TableCell><Badge variant="outline">{req.type.toUpperCase()}</Badge></TableCell>
-                                    <TableCell className="font-mono text-xs">{req.transactionId}</TableCell>
-                                    <TableCell><Badge>{req.status}</Badge></TableCell>
-                                    <TableCell className="text-right space-x-2">
-                                        <Button size="icon" variant="outline" className="text-emerald-500 hover:text-emerald-600" onClick={() => handleRequest(req.id, 'approved')}>
-                                            <CheckCircle className="w-4 h-4" />
-                                        </Button>
-                                        <Button size="icon" variant="outline" className="text-red-500 hover:text-red-600" onClick={() => handleRequest(req.id, 'rejected')}>
-                                            <XCircle className="w-4 h-4" />
-                                        </Button>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                )}
-                {requests.length === 0 && !loading && <p className="text-center text-muted-foreground py-4">No pending deposit requests.</p>}
+                        )) : (
+                            <TableRow>
+                                <TableCell colSpan={6} className="text-center h-24">No pending deposit requests.</TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
             </CardContent>
         </Card>
     );

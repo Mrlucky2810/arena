@@ -1,10 +1,11 @@
+
 "use client";
 
 import { useState } from 'react';
 import { useAuth } from '@/context/auth-context';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
-import { Coins, HelpCircle, Wallet, TrendingUp, Zap, Trophy, Target } from 'lucide-react';
+import { Coins, HelpCircle, Wallet, TrendingUp, Zap, Trophy, Target, Banknote, Bitcoin, Check } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Input } from '../ui/input';
@@ -12,9 +13,11 @@ import { addDoc, collection, serverTimestamp } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { cn } from '@/lib/utils';
 import { Badge } from '../ui/badge';
+import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
+import { Label } from '../ui/label';
 
 export const CoinFlipGameUI = () => {
-  const { user, inrBalance, updateBalance } = useAuth();
+  const { user, inrBalance, wallets, updateBalance } = useAuth();
   const { toast } = useToast();
   const [betAmount, setBetAmount] = useState<number>(10);
   const [selectedSide, setSelectedSide] = useState<'heads' | 'tails'>('heads');
@@ -24,6 +27,10 @@ export const CoinFlipGameUI = () => {
   const [streak, setStreak] = useState(0);
   const [totalWins, setTotalWins] = useState(0);
   const [totalGames, setTotalGames] = useState(0);
+  const [wallet, setWallet] = useState('inr');
+
+  const selectedBalance = wallet === 'inr' ? inrBalance : (wallets ? wallets[wallet] || 0 : 0);
+  const hasCryptoWallets = wallets && Object.keys(wallets).length > 0;
 
   const logGameResult = async (payout: number, result: 'heads' | 'tails') => {
     if (!user) return;
@@ -37,6 +44,7 @@ export const CoinFlipGameUI = () => {
             payout: payout,
             result: result,
             createdAt: serverTimestamp(),
+            currency: wallet,
         });
     } catch (error) {
         console.error("Failed to log game result:", error);
@@ -48,7 +56,7 @@ export const CoinFlipGameUI = () => {
         toast({ variant: 'destructive', title: 'Error', description: 'You must be logged in to play.' });
         return;
     }
-    if (betAmount > inrBalance) {
+    if (betAmount > selectedBalance) {
       toast({ variant: 'destructive', title: 'Insufficient balance!' });
       return;
     }
@@ -62,7 +70,7 @@ export const CoinFlipGameUI = () => {
     setCoinResult(null);
     
     try {
-        await updateBalance(user.uid, -betAmount, 'inr');
+        await updateBalance(user.uid, -betAmount, wallet);
         setTotalGames(prev => prev + 1);
     } catch (error) {
         toast({ variant: 'destructive', title: 'Error', description: 'Could not place your bet.' });
@@ -78,14 +86,14 @@ export const CoinFlipGameUI = () => {
       if (result === selectedSide) {
         const winAmount = betAmount * 1.9;
         const netWin = winAmount - betAmount;
-        updateBalance(user.uid, winAmount, 'inr');
+        updateBalance(user.uid, winAmount, wallet);
         setGameResult('win');
         setStreak(prev => prev + 1);
         setTotalWins(prev => prev + 1);
         logGameResult(netWin, result);
         toast({ 
           title: "🎉 You Won!", 
-          description: `+₹${netWin.toFixed(2)}! The coin landed on ${result}!`,
+          description: `+${netWin.toFixed(2)} ${wallet.toUpperCase()}! The coin landed on ${result}!`,
           className: "bg-emerald-50 border-emerald-200 text-emerald-800"
         });
       } else {
@@ -140,8 +148,8 @@ export const CoinFlipGameUI = () => {
           <Card className="bg-gradient-to-r from-purple-500/10 to-purple-600/10 border-purple-500/20 backdrop-blur-sm">
             <CardContent className="p-4 text-center">
               <Wallet className="w-6 h-6 mx-auto mb-2 text-purple-400" />
-              <p className="text-2xl font-bold text-purple-400">₹{inrBalance.toLocaleString()}</p>
-              <p className="text-xs text-purple-300">Balance</p>
+              <p className="text-2xl font-bold text-purple-400">{selectedBalance.toLocaleString()}</p>
+              <p className="text-xs text-purple-300">{wallet.toUpperCase()} Balance</p>
             </CardContent>
           </Card>
         </motion.div>
@@ -284,7 +292,7 @@ export const CoinFlipGameUI = () => {
                             transition={{ duration: 1, repeat: gameResult === 'win' ? 2 : 0 }}
                           >
                             {gameResult === 'win' 
-                              ? `🏆 WINNER! +₹${(potentialWin - betAmount).toFixed(2)}` 
+                              ? `🏆 WINNER! +${(potentialWin - betAmount).toFixed(2)} ${wallet.toUpperCase()}` 
                               : '💔 TRY AGAIN!'
                             }
                           </motion.div>
@@ -304,7 +312,7 @@ export const CoinFlipGameUI = () => {
                     <Button
                         size="lg"
                         onClick={flipCoin}
-                        disabled={isFlipping || betAmount > inrBalance || betAmount <= 0}
+                        disabled={isFlipping || betAmount > selectedBalance || betAmount <= 0}
                         className={cn(
                           "w-full h-16 text-xl font-bold shadow-2xl transition-all duration-300 relative overflow-hidden group",
                           gameResult === 'win' 
@@ -322,7 +330,7 @@ export const CoinFlipGameUI = () => {
                           ) : (
                             <>
                               <Coins />
-                              Flip Coin (₹{betAmount})
+                              Flip Coin ({betAmount} {wallet.toUpperCase()})
                             </>
                           )}
                         </span>
@@ -334,6 +342,71 @@ export const CoinFlipGameUI = () => {
 
           {/* Side Panel */}
           <div className="space-y-6">
+            {/* Wallet Selection */}
+            {hasCryptoWallets && (
+                <motion.div 
+                initial={{ opacity: 0, x: 20 }} 
+                animate={{ opacity: 1, x: 0 }} 
+                transition={{ delay: 0.1 }}
+                >
+                    <Card className="bg-slate-800/50 backdrop-blur-xl border-slate-700/50 shadow-xl">
+                        <CardHeader>
+                            <CardTitle className="text-xl text-slate-200 flex items-center gap-2">
+                                <Wallet className="w-5 h-5"/>
+                                Choose Wallet
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <RadioGroup 
+                                value={wallet} 
+                                onValueChange={(v) => setWallet(v)} 
+                                className="grid grid-cols-1 gap-4" 
+                                disabled={isFlipping}
+                            >
+                                <Label 
+                                    htmlFor="inr-wallet" 
+                                    className={cn(
+                                        "relative flex flex-col items-center justify-between rounded-xl border-2 bg-slate-700/30 p-4 hover:bg-slate-600/50 cursor-pointer transition-all", 
+                                        wallet === 'inr' && "border-indigo-500 bg-indigo-500/10 shadow-lg shadow-indigo-500/25"
+                                    )}
+                                >
+                                    <RadioGroupItem value="inr" id="inr-wallet" className="sr-only"/>
+                                    <div className="flex items-center gap-3 w-full">
+                                        <Banknote className="h-6 w-6 text-green-400" />
+                                        <div className="flex-1">
+                                            <div className="font-semibold text-slate-200">INR Wallet</div>
+                                            <div className="text-sm text-slate-400">₹{inrBalance.toLocaleString()}</div>
+                                        </div>
+                                        {wallet === 'inr' && <Check className="w-5 h-5 text-indigo-400" />}
+                                    </div>
+                                </Label>
+                                
+                                {wallets && Object.keys(wallets).map((crypto) => (
+                                    <Label 
+                                        key={crypto}
+                                        htmlFor={`${crypto}-wallet`} 
+                                        className={cn(
+                                            "relative flex flex-col items-center justify-between rounded-xl border-2 bg-slate-700/30 p-4 hover:bg-slate-600/50 cursor-pointer transition-all", 
+                                            wallet === crypto && "border-indigo-500 bg-indigo-500/10 shadow-lg shadow-indigo-500/25"
+                                        )}
+                                    >
+                                        <RadioGroupItem value={crypto} id={`${crypto}-wallet`} className="sr-only"/>
+                                        <div className="flex items-center gap-3 w-full">
+                                            <Bitcoin className="h-6 w-6 text-orange-400" />
+                                            <div className="flex-1">
+                                                <div className="font-semibold text-slate-200">{crypto.toUpperCase()} Wallet</div>
+                                                <div className="text-sm text-slate-400">{wallets[crypto]} {crypto.toUpperCase()}</div>
+                                            </div>
+                                            {wallet === crypto && <Check className="w-5 h-5 text-indigo-400" />}
+                                        </div>
+                                    </Label>
+                                ))}
+                            </RadioGroup>
+                        </CardContent>
+                    </Card>
+                </motion.div>
+            )}
+
             {/* Choose Side */}
             <motion.div 
               initial={{ opacity: 0, x: 20 }} 
@@ -410,7 +483,7 @@ export const CoinFlipGameUI = () => {
                       <Input
                           type="number"
                           min="1"
-                          max={inrBalance}
+                          max={selectedBalance}
                           value={betAmount}
                           onChange={(e) => setBetAmount(Math.max(0, Number(e.target.value)))}
                           className="text-center text-xl font-bold h-14 bg-slate-700/50 border-slate-600 text-slate-200 focus:border-purple-500 focus:ring-purple-500/20"
@@ -418,7 +491,7 @@ export const CoinFlipGameUI = () => {
                           placeholder="Enter amount"
                       />
                       <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
-                        ₹
+                        {wallet.toUpperCase()}
                       </div>
                     </div>
                     
@@ -428,21 +501,21 @@ export const CoinFlipGameUI = () => {
                         key={amount}
                         variant="outline"
                         onClick={() => setBetAmount(amount)}
-                        disabled={isFlipping || amount > inrBalance}
+                        disabled={isFlipping || amount > selectedBalance}
                         className="bg-slate-700/30 border-slate-600 text-slate-200 hover:bg-slate-600/50 hover:border-purple-500"
                         >
-                        ₹{amount}
+                        {wallet === 'inr' ? '₹' : ''}{amount}
                         </Button>
                     ))}
                     </div>
                     
                     <Button
                       variant="secondary"
-                      onClick={() => setBetAmount(inrBalance)}
-                      disabled={isFlipping || inrBalance === 0}
+                      onClick={() => setBetAmount(selectedBalance)}
+                      disabled={isFlipping || selectedBalance === 0}
                       className="w-full bg-gradient-to-r from-red-600/20 to-orange-600/20 border-red-500/30 text-red-300 hover:from-red-600/30 hover:to-orange-600/30"
                     >
-                      All In (₹{inrBalance.toLocaleString()})
+                      All In ({selectedBalance.toLocaleString()})
                     </Button>
                 </CardContent>
                 </Card>
@@ -465,7 +538,7 @@ export const CoinFlipGameUI = () => {
                         <div className="grid grid-cols-2 gap-4 text-sm">
                           <div className="text-center p-3 rounded-lg bg-slate-700/30 border border-slate-600/50">
                             <div className="text-slate-400">Potential Win</div>
-                            <div className="text-xl font-bold text-emerald-400">₹{potentialWin.toLocaleString()}</div>
+                            <div className="text-xl font-bold text-emerald-400">{potentialWin.toLocaleString()}</div>
                           </div>
                           <div className="text-center p-3 rounded-lg bg-slate-700/30 border border-slate-600/50">
                             <div className="text-slate-400">Multiplier</div>
@@ -517,7 +590,7 @@ export const CoinFlipGameUI = () => {
                       {
                         icon: '💰',
                         title: 'Place Bet',
-                        description: 'Enter your bet amount or use quick bet buttons. Start small and build up!'
+                        description: 'Enter your bet amount and select your wallet. Start small and build up!'
                       },
                       {
                         icon: '🎲',

@@ -26,13 +26,16 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "../ui/dropdown-menu";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { Badge } from "../ui/badge";
 
 export function AppSidebar() {
   const pathname = usePathname();
-  const { user, logout, inrBalance, cryptoBalance, userData } = useAuth();
-  const totalBalance = inrBalance + cryptoBalance;
+  const { user, logout, inrBalance, wallets, userData } = useAuth();
+  
+  const cryptoTotal = wallets ? Object.values(wallets).reduce((acc, balance) => acc + (balance || 0), 0) : 0;
+  const totalBalance = (inrBalance || 0) + cryptoTotal;
+
   const userRole = user ? (userData?.role || 'user') : 'guest';
 
   const getInitials = (name = "") => {
@@ -167,7 +170,7 @@ export function AppSidebar() {
             <div className="relative">
               <div className="flex items-center gap-3 p-3 rounded-lg bg-gradient-to-r from-card to-card/50 border border-border/50 backdrop-blur-sm">
                 <Avatar className="border-2 border-primary/20">
-                  <AvatarImage src="https://placehold.co/40x40" alt="@user" data-ai-hint="avatar placeholder" />
+                  <AvatarImage src={userData?.avatarUrl || '/user.jpg'} alt={userData?.name || 'User'} />
                   <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-bold">
                     {getInitials(userData?.name)}
                   </AvatarFallback>
@@ -221,14 +224,14 @@ export function AppSidebar() {
               <Link href="/login">
                 <Button className="w-full bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white shadow-lg">
                   <LogIn className="mr-2 h-4 w-4" />
-                  <span>Login</span>
+                  Login
                 </Button>
               </Link>
               
               <Link href="/register">
                 <Button variant="outline" className="w-full border-primary/20 hover:border-primary/50 hover:bg-primary/10 transition-all duration-300">
                   <UserPlus className="mr-2 h-4 w-4" />
-                  <span>Sign Up</span>
+                  Sign Up
                 </Button>
               </Link>
             </div>

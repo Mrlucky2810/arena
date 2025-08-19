@@ -17,7 +17,7 @@ export default function AllGamesPage() {
           </p>
         </div>
       </div>
-      <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5">
+      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
         {allGames.map((game) => (
           <GameCard key={game.name} game={game} />
         ))}

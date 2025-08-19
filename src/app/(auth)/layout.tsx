@@ -28,12 +28,12 @@ const features = [
 export default function AuthLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="relative flex min-h-screen w-full items-center justify-center overflow-hidden bg-background">
-        <Link href="/" passHref>
-          <Button variant="ghost" className="absolute top-4 left-4 z-10">
+        <Button variant="ghost" className="absolute top-4 left-4 z-10" asChild>
+          <Link href="/">
               <ArrowLeft className="mr-2 h-4 w-4" />
               Back to Home
-          </Button>
-        </Link>
+          </Link>
+        </Button>
         <div className="absolute inset-0 -z-10 h-full w-full bg-gradient-to-r from-primary via-accent to-primary/50 opacity-20 animate-gradient-xy" style={{backgroundSize: '400% 400%'}}/>
         <div className="grid grid-cols-1 md:grid-cols-2 items-center justify-center w-full max-w-6xl p-4">
             <div className="flex items-center justify-center">

@@ -1,3 +1,4 @@
+
 import * as React from "react"
 import { Slot } from "@radix-ui/react-slot"
 import { cva, type VariantProps } from "class-variance-authority"
@@ -49,59 +50,43 @@ export interface ButtonProps
 
 const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
   ({ className, variant, size, asChild = false, glow = false, shimmer = false, children, ...props }, ref) => {
-    const Comp = asChild ? Slot : "button"
-    
-    // When using asChild, we need to pass effects as props to avoid multiple children
-    if (asChild) {
-      return (
-        <Comp
-          className={cn(buttonVariants({ variant, size }), className)}
-          ref={ref}
-          {...props}
-        >
-          {React.cloneElement(children as React.ReactElement, {
-            children: (
-              <>
-                {/* Shimmer effect */}
-                {shimmer && (
-                  <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
-                )}
-                
-                {/* Glow effect */}
-                {glow && (
-                  <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/20 via-primary/40 to-primary/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10" />
-                )}
-                
-                <span className="relative z-10">{(children as React.ReactElement).props.children}</span>
-              </>
-            )
-          })}
-        </Comp>
-      )
-    }
-    
-    // Regular button rendering
-    return (
-      <Comp
-        className={cn(buttonVariants({ variant, size }), className)}
-        ref={ref}
-        {...props}
-      >
-        {/* Shimmer effect */}
+    const Comp = asChild ? Slot : "button";
+
+    const content = (
+      <>
         {shimmer && (
           <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
         )}
-        
-        {/* Glow effect */}
         {glow && (
           <div className="absolute inset-0 rounded-xl bg-gradient-to-r from-primary/20 via-primary/40 to-primary/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 -z-10" />
         )}
-        
-        <span className="relative z-10">{children}</span>
+        {children}
+      </>
+    );
+
+    if (asChild) {
+      return (
+        <Comp
+          className={cn(buttonVariants({ variant, size, className }))}
+          ref={ref}
+          {...props}
+        >
+          {children}
+        </Comp>
+      );
+    }
+    
+    return (
+      <Comp
+        className={cn(buttonVariants({ variant, size, className }))}
+        ref={ref}
+        {...props}
+      >
+        {content}
       </Comp>
-    )
+    );
   }
-)
+);
 Button.displayName = "Button"
 
 export { Button, buttonVariants }

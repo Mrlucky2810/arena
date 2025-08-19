@@ -12,6 +12,7 @@ import { Badge } from "../ui/badge";
 import { StatCard } from "../dashboard/stat-card";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/context/auth-context";
+import { Skeleton } from "../ui/skeleton";
 
 interface ReferredUser {
     name: string;
@@ -26,8 +27,8 @@ export function ReferralDashboard() {
   const [referredUsersList, setReferredUsersList] = useState<ReferredUser[]>([]);
   const [dataLoading, setDataLoading] = useState(true);
 
-  const referralLink = `https://apexarena.com/register?ref=${userData?.referralCode || ''}`;
-  const referralCode = userData?.referralCode || '';
+  const referralLink = user ? `https://apexarena.com/register?ref=${userData?.referralCode || ''}` : '';
+  const referralCode = user ? userData?.referralCode || '' : '';
   
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -70,7 +71,41 @@ export function ReferralDashboard() {
     }
   }, [user, userData, loading]);
   
-  if (loading) return <div>Loading...</div>
+  if (loading) {
+      return (
+          <div className="space-y-8">
+              <div className="grid gap-4 md:grid-cols-2">
+                  <Card>
+                      <CardHeader><CardTitle>Total Referrals</CardTitle></CardHeader>
+                      <CardContent><Skeleton className="h-8 w-16" /></CardContent>
+                  </Card>
+                  <Card>
+                      <CardHeader><CardTitle>Referral Earnings</CardTitle></CardHeader>
+                      <CardContent><Skeleton className="h-8 w-20" /></CardContent>
+                  </Card>
+              </div>
+              <Card>
+                  <CardHeader><CardTitle>Loading...</CardTitle></CardHeader>
+                  <CardContent>
+                      <div className="space-y-2">
+                          <Skeleton className="h-10 w-full" />
+                          <Skeleton className="h-10 w-full" />
+                      </div>
+                  </CardContent>
+              </Card>
+               <Card>
+                  <CardHeader><CardTitle>Referred Users</CardTitle></CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                        {[...Array(3)].map((_, i) => (
+                            <Skeleton key={i} className="h-12 w-full" />
+                        ))}
+                    </div>
+                  </CardContent>
+              </Card>
+          </div>
+      );
+  }
 
   return (
     <div className="space-y-8">
@@ -82,19 +117,19 @@ export function ReferralDashboard() {
       <Card>
         <CardHeader>
           <CardTitle>Your Referral Link & Code</CardTitle>
-          <CardDescription>Share your referral code. When your friends sign up using it, you both get ₹150!</CardDescription>
+          <CardDescription>Share your code. You get 0.10% of their first deposit as a bonus!</CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">
           <div className="flex flex-col sm:flex-row items-center gap-2 p-3 rounded-lg bg-muted">
             <p className="text-sm font-mono text-muted-foreground flex-1 truncate">{referralLink}</p>
-            <Button onClick={() => copyToClipboard(referralLink)} size="sm">
+            <Button onClick={() => copyToClipboard(referralLink)} size="sm" disabled={!user}>
               <Copy className="mr-2 h-4 w-4" />
               Copy Link
             </Button>
           </div>
            <div className="flex flex-col sm:flex-row items-center gap-2 p-3 rounded-lg bg-muted">
             <p className="text-sm font-mono text-muted-foreground flex-1 truncate">{referralCode}</p>
-            <Button onClick={() => copyToClipboard(referralCode)} size="sm">
+            <Button onClick={() => copyToClipboard(referralCode)} size="sm" disabled={!user}>
               <Copy className="mr-2 h-4 w-4" />
               Copy Code
             </Button>
@@ -108,7 +143,13 @@ export function ReferralDashboard() {
           <CardDescription>Track the status of your referrals and your earnings from them.</CardDescription>
         </CardHeader>
         <CardContent className="overflow-x-auto">
-          {dataLoading ? (<p>Loading referrals...</p>) : (
+          {dataLoading ? (
+            <div className="space-y-2">
+                {[...Array(3)].map((_, i) => (
+                    <Skeleton key={i} className="h-12 w-full" />
+                ))}
+            </div>
+          ) : (
             <Table>
                 <TableHeader>
                 <TableRow>
@@ -155,13 +196,13 @@ export function ReferralDashboard() {
             </div>
             <div className="flex flex-col items-center gap-2">
                 <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-lg">2</div>
-                <h3 className="font-semibold">Friend Signs Up</h3>
-                <p className="text-sm text-muted-foreground">Your friend registers on Apex Arena and enters your code.</p>
+                <h3 className="font-semibold">Friend Signs Up & Deposits</h3>
+                <p className="text-sm text-muted-foreground">Your friend registers and makes their first INR deposit.</p>
             </div>
             <div className="flex flex-col items-center gap-2">
                 <div className="w-10 h-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center font-bold text-lg">3</div>
-                <h3 className="font-semibold">You Both Earn Rewards</h3>
-                <p className="text-sm text-muted-foreground">You both get ₹150! It's that simple!</p>
+                <h3 className="font-semibold">You Earn Rewards</h3>
+                <p className="text-sm text-muted-foreground">You earn 0.10% of their first deposit amount instantly!</p>
             </div>
         </CardContent>
       </Card>

@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
 import { CheckCircle, XCircle } from 'lucide-react';
+import { Skeleton } from '../ui/skeleton';
 
 interface WithdrawalRequest {
     id: string;
@@ -66,7 +67,7 @@ export function WithdrawalRequests() {
             if (newStatus === 'rejected') {
                 // If rejected, refund the amount to the user's balance
                 const userDocRef = doc(db, 'users', request.userId);
-                const balanceField = request.type === 'inr' ? 'inrBalance' : 'cryptoBalance';
+                const balanceField = request.type === 'inr' ? 'inrBalance' : `wallets.${request.details.currency.toLowerCase()}`;
                 await updateDoc(userDocRef, { [balanceField]: increment(request.amount) });
             }
             // If approved, the amount is already deducted when the request was made.
@@ -81,12 +82,30 @@ export function WithdrawalRequests() {
     
     const renderDetails = (details: any, type: string) => {
         if (type === 'inr') {
-            return `Name: ${details.accountHolderName}, A/C: ${details.accountNumber}, IFSC: ${details.ifscCode}`;
+            return `UPI ID: ${details.upiId}`;
         }
         if (type === 'crypto') {
             return `Network: ${details.network}, Address: ${details.walletAddress}`;
         }
         return 'N/A';
+    }
+
+    if (loading) {
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Manage Withdrawal Requests</CardTitle>
+                    <CardDescription>Review and approve or reject user withdrawal requests.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-2">
+                        {[...Array(5)].map((_, i) => (
+                            <Skeleton key={i} className="h-12 w-full" />
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
+        );
     }
 
     return (
@@ -96,40 +115,41 @@ export function WithdrawalRequests() {
                 <CardDescription>Review and approve or reject user withdrawal requests.</CardDescription>
             </CardHeader>
             <CardContent>
-                {loading ? <p>Loading requests...</p> : (
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>User Email</TableHead>
-                                <TableHead>Amount</TableHead>
-                                <TableHead>Type</TableHead>
-                                <TableHead>Details</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>User Email</TableHead>
+                            <TableHead>Amount</TableHead>
+                            <TableHead>Type</TableHead>
+                            <TableHead>Details</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {requests.length > 0 ? requests.map(req => (
+                            <TableRow key={req.id}>
+                                <TableCell>{req.userEmail || req.userId}</TableCell>
+                                <TableCell>₹{req.amount.toLocaleString()}</TableCell>
+                                <TableCell><Badge variant="outline">{req.type.toUpperCase()}</Badge></TableCell>
+                                <TableCell className="text-xs">{renderDetails(req.details, req.type)}</TableCell>
+                                <TableCell><Badge>{req.status}</Badge></TableCell>
+                                <TableCell className="text-right space-x-2">
+                                    <Button size="icon" variant="outline" className="text-emerald-500 hover:text-emerald-600" onClick={() => handleRequest(req.id, 'approved')}>
+                                        <CheckCircle className="w-4 h-4" />
+                                    </Button>
+                                    <Button size="icon" variant="outline" className="text-red-500 hover:text-red-600" onClick={() => handleRequest(req.id, 'rejected')}>
+                                        <XCircle className="w-4 h-4" />
+                                    </Button>
+                                </TableCell>
                             </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {requests.map(req => (
-                                <TableRow key={req.id}>
-                                    <TableCell>{req.userEmail || req.userId}</TableCell>
-                                    <TableCell>₹{req.amount.toLocaleString()}</TableCell>
-                                    <TableCell><Badge variant="outline">{req.type.toUpperCase()}</Badge></TableCell>
-                                    <TableCell className="text-xs">{renderDetails(req.details, req.type)}</TableCell>
-                                    <TableCell><Badge>{req.status}</Badge></TableCell>
-                                    <TableCell className="text-right space-x-2">
-                                        <Button size="icon" variant="outline" className="text-emerald-500 hover:text-emerald-600" onClick={() => handleRequest(req.id, 'approved')}>
-                                            <CheckCircle className="w-4 h-4" />
-                                        </Button>
-                                        <Button size="icon" variant="outline" className="text-red-500 hover:text-red-600" onClick={() => handleRequest(req.id, 'rejected')}>
-                                            <XCircle className="w-4 h-4" />
-                                        </Button>
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                )}
-                {requests.length === 0 && !loading && <p className="text-center text-muted-foreground py-4">No pending withdrawal requests.</p>}
+                        )) : (
+                            <TableRow>
+                                <TableCell colSpan={6} className="text-center h-24">No pending withdrawal requests.</TableCell>
+                            </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
             </CardContent>
         </Card>
     );

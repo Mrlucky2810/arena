@@ -31,28 +31,32 @@ import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export function WithdrawForm() {
-    const { user, inrBalance, cryptoBalance, updateBalance } = useAuth();
+    const { user, inrBalance, wallets, updateBalance } = useAuth();
     const { toast } = useToast();
+    const cryptoBalance = wallets ? Object.values(wallets).reduce((acc, v) => acc + v, 0) : 0;
 
     const inrSchema = z.object({
-        accountHolderName: z.string().min(2, "Name is too short"),
-        accountNumber: z.string().regex(/^\d{9,18}$/, "Invalid account number"),
-        ifscCode: z.string().regex(/^[A-Z]{4}0[A-Z0-9]{6}$/, "Invalid IFSC code"),
-        amount: z.coerce.number().positive("Amount must be positive").max(inrBalance, "Insufficient balance"),
+        upiId: z.string().min(1, "UPI ID is required").regex(/^[a-zA-Z0-9.\-_]{2,256}@[a-zA-Z]{2,64}$/, "Invalid UPI ID format (e.g. user@bank)"),
+        amount: z.coerce.number().positive("Amount must be positive").min(100, "Minimum withdrawal is ₹100").max(inrBalance, "Insufficient balance"),
     });
-
+    
     const cryptoSchema = z.object({
-        walletAddress: z.string().min(26, "Invalid wallet address"),
-        network: z.string({ required_error: "Please select a network." }),
-        amount: z.coerce.number().positive("Amount must be positive").max(cryptoBalance, "Insufficient balance"),
+        currency: z.string({ required_error: "Please select a currency" }),
+        walletAddress: z.string().min(1, "Wallet address is required").min(26, "Invalid wallet address"),
+        amount: z.coerce.number().positive("Amount must be positive"),
+    }).refine(data => {
+        if (!wallets || !data.currency) return true; // Let other validators handle missing currency
+        const balance = wallets[data.currency] || 0;
+        return data.amount <= balance;
+    }, {
+        message: "Insufficient balance for the selected currency",
+        path: ["amount"],
     });
 
     const inrForm = useForm<z.infer<typeof inrSchema>>({
         resolver: zodResolver(inrSchema),
         defaultValues: {
-            accountHolderName: "",
-            accountNumber: "",
-            ifscCode: "",
+            upiId: "",
             amount: 100,
         },
     });
@@ -61,7 +65,7 @@ export function WithdrawForm() {
         resolver: zodResolver(cryptoSchema),
         defaultValues: {
             walletAddress: "",
-            amount: 100,
+            amount: 0.0,
         },
     });
 
@@ -79,9 +83,7 @@ export function WithdrawForm() {
                     userId: user.uid,
                     type: 'inr',
                     details: {
-                        accountHolderName: values.accountHolderName,
-                        accountNumber: values.accountNumber,
-                        ifscCode: values.ifscCode,
+                        upiId: values.upiId,
                     },
                     amount: values.amount,
                     status: 'pending',
@@ -102,20 +104,26 @@ export function WithdrawForm() {
 
     async function onCryptoSubmit(values: z.infer<typeof cryptoSchema>) {
         if (!user) return;
-        if (values.amount > cryptoBalance) {
-            toast({ variant: "destructive", title: "Error", description: "Insufficient Crypto balance." });
+        const selectedWalletBalance = wallets?.[values.currency] || 0;
+        if (values.amount <= 0) {
+            toast({ variant: "destructive", title: "Error", description: `Amount must be positive.` });
+            return;
+        }
+        if (values.amount > selectedWalletBalance) {
+            toast({ variant: "destructive", title: "Error", description: `Insufficient ${values.currency.toUpperCase()} balance.` });
             return;
         }
          try {
-            await updateBalance(user.uid, -values.amount, 'crypto');
+            await updateBalance(user.uid, -values.amount, values.currency);
 
             try {
                 await addDoc(collection(db, "withdrawals"), {
                     userId: user.uid,
                     type: 'crypto',
+                    currency: values.currency,
                     details: {
                         walletAddress: values.walletAddress,
-                        network: values.network,
+                        currency: values.currency,
                     },
                     amount: values.amount,
                     status: 'pending',
@@ -125,7 +133,7 @@ export function WithdrawForm() {
                 cryptoForm.reset();
             } catch (dbError) {
                 // Refund balance if db write fails
-                await updateBalance(user.uid, values.amount, 'crypto');
+                await updateBalance(user.uid, values.amount, values.currency);
                 throw dbError;
             }
         } catch (error) {
@@ -137,53 +145,33 @@ export function WithdrawForm() {
 
   return (
     <Tabs defaultValue="inr" className="w-full">
-      <TabsList className="grid w-full grid-cols-1 sm:grid-cols-2">
-        <TabsTrigger value="inr"><Banknote className="mr-2"/> Withdraw via INR</TabsTrigger>
-        <TabsTrigger value="crypto"><Bitcoin className="mr-2"/> Withdraw via Crypto</TabsTrigger>
+      <TabsList className="grid w-full grid-cols-2">
+        <TabsTrigger value="inr" className="flex items-center gap-2">
+          <Banknote className="h-5 w-5"/>
+          <span>Withdraw via INR</span>
+        </TabsTrigger>
+        <TabsTrigger value="crypto" className="flex items-center gap-2">
+          <Bitcoin className="h-5 w-5"/>
+          <span>Withdraw via Crypto</span>
+        </TabsTrigger>
       </TabsList>
       <TabsContent value="inr">
         <Card>
           <CardHeader>
-            <CardTitle>Bank Account Details</CardTitle>
-            <CardDescription>Enter your bank details to withdraw funds in INR.</CardDescription>
+            <CardTitle>UPI Details</CardTitle>
+            <CardDescription>Enter your UPI ID to withdraw funds in INR.</CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...inrForm}>
               <form onSubmit={inrForm.handleSubmit(onInrSubmit)} className="space-y-6">
                 <FormField
                   control={inrForm.control}
-                  name="accountHolderName"
+                  name="upiId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Account Holder Name</FormLabel>
+                      <FormLabel>UPI ID</FormLabel>
                       <FormControl>
-                        <Input placeholder="John Doe" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={inrForm.control}
-                  name="accountNumber"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Bank Account Number</FormLabel>
-                      <FormControl>
-                        <Input placeholder="1234567890" {...field} />
-                      </FormControl>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-                 <FormField
-                  control={inrForm.control}
-                  name="ifscCode"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>IFSC Code</FormLabel>
-                      <FormControl>
-                        <Input placeholder="ABCD0123456" {...field} />
+                        <Input placeholder="yourname@bank" {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -219,6 +207,30 @@ export function WithdrawForm() {
               <form onSubmit={cryptoForm.handleSubmit(onCryptoSubmit)} className="space-y-6">
                 <FormField
                   control={cryptoForm.control}
+                  name="currency"
+                  render={({ field }) => (
+                    <FormItem>
+                        <FormLabel>Currency</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                            <FormControl>
+                            <SelectTrigger>
+                                <SelectValue placeholder="Select a currency to withdraw" />
+                            </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                                {wallets && Object.keys(wallets).filter(key => wallets[key] > 0).map(key => (
+                                    <SelectItem key={key} value={key}>
+                                        {key.toUpperCase()} (Balance: {wallets[key]})
+                                    </SelectItem>
+                                ))}
+                            </SelectContent>
+                        </Select>
+                        <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormField
+                  control={cryptoForm.control}
                   name="walletAddress"
                   render={({ field }) => (
                     <FormItem>
@@ -230,39 +242,15 @@ export function WithdrawForm() {
                     </FormItem>
                   )}
                 />
-                 <FormField
-                  control={cryptoForm.control}
-                  name="network"
-                  render={({ field }) => (
-                    <FormItem>
-                        <FormLabel>Network</FormLabel>
-                        <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select a network" />
-                            </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                                <SelectItem value="btc">Bitcoin (BTC)</SelectItem>
-                                <SelectItem value="eth">Ethereum (ETH)</SelectItem>
-                                <SelectItem value="usdt-trc20">USDT (TRC20)</SelectItem>
-                                <SelectItem value="usdt-erc20">USDT (ERC20)</SelectItem>
-                            </SelectContent>
-                        </Select>
-                        <FormMessage />
-                    </FormItem>
-                  )}
-                />
                 <FormField
                   control={cryptoForm.control}
                   name="amount"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Amount (Crypto Balance: ₹{cryptoBalance.toLocaleString()})</FormLabel>
+                      <FormLabel>Amount to Withdraw</FormLabel>
                       <FormControl>
-                        <Input type="number" placeholder="Enter amount" {...field} />
+                        <Input type="number" placeholder="Enter amount in selected currency" {...field} step="any" />
                       </FormControl>
-                      <FormDescription>Amount in INR will be converted to crypto at the current market rate.</FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}

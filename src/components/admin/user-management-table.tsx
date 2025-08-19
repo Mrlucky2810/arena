@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Ban, CheckCircle } from 'lucide-react';
+import { Skeleton } from '../ui/skeleton';
 
 interface User {
     uid: string;
@@ -76,6 +77,24 @@ export function UserManagementTable() {
             toast({ variant: 'destructive', title: 'Error', description: 'Could not update user status.' });
         }
     };
+    
+    if (loading) {
+        return (
+            <Card>
+                <CardHeader>
+                    <CardTitle>Manage Users</CardTitle>
+                    <CardDescription>View, filter, and manage user accounts.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <div className="space-y-2">
+                        {[...Array(5)].map((_, i) => (
+                            <Skeleton key={i} className="h-12 w-full" />
+                        ))}
+                    </div>
+                </CardContent>
+            </Card>
+        );
+    }
 
     return (
         <Card>
@@ -92,47 +111,48 @@ export function UserManagementTable() {
                         className="max-w-sm"
                     />
                 </div>
-                {loading ? <p>Loading users...</p> : (
-                    <Table>
-                        <TableHeader>
-                            <TableRow>
-                                <TableHead>Name</TableHead>
-                                <TableHead>Email</TableHead>
-                                <TableHead>Balance</TableHead>
-                                <TableHead>Status</TableHead>
-                                <TableHead className="text-right">Actions</TableHead>
+                <Table>
+                    <TableHeader>
+                        <TableRow>
+                            <TableHead>Name</TableHead>
+                            <TableHead>Email</TableHead>
+                            <TableHead>Balance</TableHead>
+                            <TableHead>Status</TableHead>
+                            <TableHead className="text-right">Actions</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {filteredUsers.length > 0 ? filteredUsers.map(user => (
+                            <TableRow key={user.uid}>
+                                <TableCell className="font-medium">{user.name}</TableCell>
+                                <TableCell>{user.email}</TableCell>
+                                <TableCell>₹{(user.balance || 0).toLocaleString()}</TableCell>
+                                <TableCell>
+                                    <Badge variant={user.status === 'blocked' ? 'destructive' : 'default'} className={user.status === 'active' ? 'bg-emerald-500/20 text-emerald-700' : ''}>
+                                        {user.status || 'active'}
+                                    </Badge>
+                                </TableCell>
+                                <TableCell className="text-right space-x-2">
+                                    {user.status === 'blocked' ? (
+                                        <Button size="sm" variant="outline" className="text-emerald-500 hover:text-emerald-600" onClick={() => handleUpdateStatus(user.uid, 'active')}>
+                                            <CheckCircle className="w-4 h-4 mr-2" />
+                                            Unblock
+                                        </Button>
+                                    ) : (
+                                        <Button size="sm" variant="destructive" onClick={() => handleUpdateStatus(user.uid, 'blocked')}>
+                                            <Ban className="w-4 h-4 mr-2" />
+                                            Block
+                                        </Button>
+                                    )}
+                                </TableCell>
                             </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                            {filteredUsers.map(user => (
-                                <TableRow key={user.uid}>
-                                    <TableCell className="font-medium">{user.name}</TableCell>
-                                    <TableCell>{user.email}</TableCell>
-                                    <TableCell>₹{(user.balance || 0).toLocaleString()}</TableCell>
-                                    <TableCell>
-                                        <Badge variant={user.status === 'blocked' ? 'destructive' : 'default'} className={user.status === 'active' ? 'bg-emerald-500/20 text-emerald-700' : ''}>
-                                            {user.status || 'active'}
-                                        </Badge>
-                                    </TableCell>
-                                    <TableCell className="text-right space-x-2">
-                                        {user.status === 'blocked' ? (
-                                            <Button size="sm" variant="outline" className="text-emerald-500 hover:text-emerald-600" onClick={() => handleUpdateStatus(user.uid, 'active')}>
-                                                <CheckCircle className="w-4 h-4 mr-2" />
-                                                Unblock
-                                            </Button>
-                                        ) : (
-                                            <Button size="sm" variant="destructive" onClick={() => handleUpdateStatus(user.uid, 'blocked')}>
-                                                <Ban className="w-4 h-4 mr-2" />
-                                                Block
-                                            </Button>
-                                        )}
-                                    </TableCell>
-                                </TableRow>
-                            ))}
-                        </TableBody>
-                    </Table>
-                )}
-                {filteredUsers.length === 0 && !loading && <p className="text-center text-muted-foreground py-4">No users found.</p>}
+                        )) : (
+                           <TableRow>
+                                <TableCell colSpan={5} className="text-center h-24">No users found.</TableCell>
+                           </TableRow>
+                        )}
+                    </TableBody>
+                </Table>
             </CardContent>
         </Card>
     );

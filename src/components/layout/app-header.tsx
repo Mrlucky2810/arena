@@ -15,14 +15,16 @@ import {
 import { SidebarTrigger } from "../ui/sidebar";
 import Link from "next/link";
 import { useAuth } from "@/context/auth-context";
-import { motion, AnimatePresence } from "framer-motion";
+import { AnimatePresence } from "framer-motion";
 import { Badge } from "../ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import React from "react";
 
 export function AppHeader() {
-    const { user, logout, inrBalance, cryptoBalance, userData } = useAuth();
-    const totalBalance = inrBalance + cryptoBalance;
+    const { user, logout, inrBalance, wallets, userData } = useAuth();
+    
+    const cryptoTotal = wallets ? Object.values(wallets).reduce((acc, balance) => acc + (balance || 0), 0) : 0;
+    const totalBalance = (inrBalance || 0) + cryptoTotal;
+    
     const isAdmin = userData?.role === 'admin';
 
     const getInitials = (name = "") => {
@@ -33,9 +35,8 @@ export function AppHeader() {
     <header className="sticky top-0 z-30 flex h-16 items-center gap-4 border-b bg-card/80 backdrop-blur-xl px-4 md:px-6 shadow-sm border-border/50">
       <SidebarTrigger className="md:hidden hover:bg-primary/10 transition-colors" />
       
-      {/* Search Bar */}
-      <div className="flex-1 max-w-md">
-        <div className="relative group">
+      <div className="flex-1">
+        <div className="relative group w-full max-w-md">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground group-focus-within:text-primary transition-colors" />
           <Input
             type="search"
@@ -45,10 +46,9 @@ export function AppHeader() {
         </div>
       </div>
 
-      <div className="flex items-center gap-2 sm:gap-4">
+      <div className="flex items-center gap-2 sm:gap-4 ml-auto">
         {user && !isAdmin && (
           <>
-            {/* Balance Display */}
             <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-gradient-to-r from-primary/10 to-accent/10 border border-primary/20">
               <Wallet className="h-4 w-4 text-primary" />
               <span className="font-bold text-sm">
@@ -56,7 +56,6 @@ export function AppHeader() {
               </span>
             </div>
 
-            {/* Notifications */}
             <Button variant="ghost" size="icon" className="relative rounded-full hover:bg-primary/10 transition-colors">
               <Bell className="h-5 w-5" />
               <div className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full flex items-center justify-center">
@@ -67,22 +66,15 @@ export function AppHeader() {
           </>
         )}
 
-        {/* User Menu */}
         <div className="flex items-center gap-2">
           <AnimatePresence mode="wait">
             {user ? (
               <div className="flex items-center gap-3">
-                {!isAdmin && (
-                  <span className="font-semibold text-sm hidden lg:inline-block px-3 py-1 rounded-full bg-gradient-to-r from-emerald-500/10 to-green-500/10 text-emerald-600 border border-emerald-500/20">
-                    ₹{totalBalance.toLocaleString()}
-                  </span>
-                )}
-                
                 <DropdownMenu>
                   <DropdownMenuTrigger asChild>
                     <Button variant="ghost" className="relative h-10 w-10 rounded-full border-2 border-primary/20 hover:border-primary/50 transition-colors">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src="https://placehold.co/40x40" alt="@user" data-ai-hint="avatar placeholder" />
+                        <AvatarImage src={userData?.avatarUrl || '/user.jpg'} alt={userData?.name || 'User'} />
                         <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-bold">
                           {getInitials(userData?.name)}
                         </AvatarFallback>
@@ -97,7 +89,7 @@ export function AppHeader() {
                   <DropdownMenuContent align="end" className="w-64 p-2 bg-card/95 backdrop-blur-xl border border-border/50">
                     <DropdownMenuLabel className="flex items-center gap-3 p-3">
                       <Avatar className="h-10 w-10">
-                        <AvatarImage src="https://placehold.co/40x40" alt="@user" data-ai-hint="avatar placeholder" />
+                        <AvatarImage src={userData?.avatarUrl || '/user.jpg'} alt={userData?.name || 'User'} />
                         <AvatarFallback className="bg-gradient-to-br from-primary to-accent text-white font-bold">
                           {getInitials(userData?.name)}
                         </AvatarFallback>
@@ -163,16 +155,16 @@ export function AppHeader() {
               </div>
             ) : (
               <div className="flex items-center gap-2">
-                <Link href="/login" passHref>
+                <Link href="/login">
                   <Button size="sm" className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white">
-                    <LogIn className="mr-2 h-4 w-4" />
+                    <LogIn className="h-4 w-4 mr-2" />
                     <span className="hidden sm:inline">Login</span>
                   </Button>
                 </Link>
                 
-                <Link href="/register" passHref>
+                <Link href="/register">
                   <Button variant="outline" size="sm" className="border-primary/20 hover:border-primary/50 hover:bg-primary/10 transition-all duration-300">
-                    <UserPlus className="mr-2 h-4 w-4" />
+                    <UserPlus className="h-4 w-4 mr-2" />
                     <span className="hidden sm:inline">Sign Up</span>
                   </Button>
                 </Link>

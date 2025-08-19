@@ -1,8 +1,9 @@
+
 "use client"
 
 import Link from "next/link";
 import { Button } from "../ui/button";
-import { Gamepad2, ShieldCheck, Trophy, Zap, Star, Users, TrendingUp, Crown, Play, ArrowRight } from "lucide-react";
+import { Gamepad2, ShieldCheck, Trophy, Zap, Star, Users, Crown, Play, ArrowRight } from "lucide-react";
 import Image from "next/image";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Carousel, CarouselContent, CarouselItem, CarouselNext, CarouselPrevious } from "../ui/carousel";
@@ -127,29 +128,25 @@ export function GuestDashboard() {
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                             >
-                                <Link href="/register">
-                                <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white shadow-xl hover:shadow-primary/30 transition-all duration-300 text-lg px-8 py-6">
-                                    
+                                <Button size="lg" className="w-full sm:w-auto bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white shadow-xl hover:shadow-primary/30 transition-all duration-300 text-lg px-8 py-6" asChild>
+                                    <Link href="/register">
                                         <Crown className="mr-2 h-5 w-5" />
                                         Start Winning Now
                                         <ArrowRight className="ml-2 h-5 w-5" />
-                                    
+                                    </Link>
                                 </Button>
-                                </Link>
                             </motion.div>
                             
                             <motion.div
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                             >
-                                <Link href="/games">
-                                <Button size="lg" variant="outline" className="w-full sm:w-auto border-primary/20 hover:border-primary/50 hover:bg-primary/10 transition-all duration-300 text-lg px-8 py-6">
-                                    
+                                <Button size="lg" variant="outline" className="w-full sm:w-auto border-primary/20 hover:border-primary/50 hover:bg-primary/10 transition-all duration-300 text-lg px-8 py-6" asChild>
+                                    <Link href="/games">
                                         <Play className="mr-2 h-5 w-5" />
                                         Explore Games
-                                    
+                                    </Link>
                                 </Button>
-                                </Link>
                             </motion.div>
                         </motion.div>
                     </motion.div>
@@ -190,12 +187,11 @@ export function GuestDashboard() {
                                 </Card>
                             </Link>
                         </motion.div>
-                        
-                        <motion.div
+                         <motion.div
                             whileHover={{ scale: 1.05, rotate: -2 }}
                             transition={{ type: "spring", stiffness: 300 }}
                         >
-                            <Link href="/sports">
+                            <Link href="/games/crash">
                                 <Card className="relative group overflow-hidden rounded-xl aspect-square cursor-pointer">
                                     <Image 
                                         src="/sports.jpg" 
@@ -209,7 +205,7 @@ export function GuestDashboard() {
                                     <div className="absolute bottom-0 left-0 p-4 w-full">
                                         <div className="flex items-center gap-2 mb-2">
                                             <Trophy className="text-accent" />
-                                            <h3 className="font-bold text-lg text-white">Sports</h3>
+                                            <h3 className="font-bold text-lg text-white">Top Games</h3>
                                         </div>
                                         <div className="flex items-center gap-2 text-sm text-white/80">
                                             <div className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
@@ -378,23 +374,23 @@ export function GuestDashboard() {
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                 >
-                                    <Link href="/register">
-                                    <Button size="lg" className="bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white shadow-xl hover:shadow-emerald-500/30 transition-all duration-300">
-                                        <Crown className="mr-2 h-5 w-5" />
-                                        Claim Bonus Now
+                                    <Button size="lg" className="bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 text-white shadow-xl hover:shadow-emerald-500/30 transition-all duration-300" asChild>
+                                        <Link href="/register" className="flex items-center gap-2">
+                                            <Crown className="h-5 w-5" />
+                                            Claim Bonus Now
+                                        </Link>
                                     </Button>
-                                    </Link>
                                 </motion.div>
                                 
                                 <motion.div
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                 >
-                                    <Link href="/promotions">
-                                    <Button size="lg" variant="outline" className="border-primary/30 hover:border-primary/50 hover:bg-primary/10 transition-all duration-300">
+                                    <Button size="lg" variant="outline" className="border-primary/30 hover:border-primary/50 hover:bg-primary/10 transition-all duration-300" asChild>
+                                        <Link href="/promotions">
                                             View All Promotions
+                                        </Link>
                                     </Button>
-                                    </Link>
                                 </motion.div>
                             </div>
                         </motion.div>
@@ -518,13 +514,13 @@ export function GuestDashboard() {
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                             >
-                                <Link href="/register">
-                                <Button size="lg" className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white shadow-2xl hover:shadow-primary/30 transition-all duration-300 text-lg px-8 py-6">
-                                    <Crown className="mr-2 h-5 w-5" />
-                                    Start Your Journey
-                                    <ArrowRight className="ml-2 h-5 w-5" />
+                                <Button size="lg" className="bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90 text-white shadow-2xl hover:shadow-primary/30 transition-all duration-300 text-lg px-8 py-6" asChild>
+                                    <Link href="/register" className="flex items-center gap-2">
+                                        <Crown className="h-5 w-5" />
+                                        Start Your Journey
+                                        <ArrowRight className="h-5 w-5" />
+                                    </Link>
                                 </Button>
-                                </Link>
                             </motion.div>
                             
                             <div className="flex items-center gap-2 text-sm text-muted-foreground">

@@ -22,10 +22,10 @@ import { addDoc, collection, serverTimestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 const formSchema = z.object({
-  name: z.string().min(2, "Name is too short"),
-  email: z.string().email("Invalid email"),
-  subject: z.string().min(5, "Subject should be at least 5 characters"),
-  message: z.string().min(20, "Message should be at least 20 characters"),
+  name: z.string().min(1, "Name is required").min(2, "Name is too short"),
+  email: z.string().min(1, "Email is required").email("Invalid email"),
+  subject: z.string().min(1, "Subject is required").min(5, "Subject should be at least 5 characters"),
+  message: z.string().min(1, "Message is required").min(20, "Message should be at least 20 characters"),
 });
 
 export function ContactForm() {

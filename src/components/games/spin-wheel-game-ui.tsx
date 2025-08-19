@@ -1,3 +1,4 @@
+
 "use client";
 
 import { useState } from 'react';
@@ -180,3 +181,257 @@ export function SpinWheelGameUI() {
               className="lg:col-span-2"
           >
               <Card className="text-center overflow-hidden bg-slate-800/50 backdrop-blur-xl border-slate-700/50 shadow-2xl">
+                <CardHeader>
+                  <CardTitle className="text-3xl font-bold bg-gradient-to-r from-purple-400 to-fuchsia-400 bg-clip-text text-transparent">
+                    Wheel of Fortune
+                  </CardTitle>
+                   {streak > 0 && (
+                    <Badge className="mx-auto w-fit bg-gradient-to-r from-orange-500 to-red-500 text-white">
+                      🔥 {streak} Win Streak!
+                    </Badge>
+                  )}
+                </CardHeader>
+                
+                <CardContent className="flex flex-col items-center justify-center gap-8 p-8">
+                  {/* Wheel Container */}
+                  <div className="relative w-80 h-80 sm:w-96 sm:h-96">
+                    {/* Wheel pointer */}
+                    <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-4 z-20">
+                      <div className="w-0 h-0 border-x-12 border-x-transparent border-b-20 border-b-purple-400" style={{borderLeftWidth: '12px', borderRightWidth: '12px', borderBottomWidth: '20px'}}/>
+                    </div>
+                    
+                    {/* Wheel */}
+                    <motion.div
+                        className="relative w-full h-full rounded-full border-8 border-slate-700 shadow-2xl overflow-hidden"
+                        animate={{ rotate: rotation }}
+                        transition={{ duration: 4, ease: [0.25, 0.1, 0.25, 1] }}
+                    >
+                        {segments.map((segment, index) => (
+                            <div
+                                key={index}
+                                className={cn(
+                                    "absolute w-1/2 h-1/2 origin-bottom-right",
+                                    `bg-gradient-to-br ${segment.color}`
+                                )}
+                                style={{
+                                    transform: `rotate(${index * (360 / segments.length)}deg)`,
+                                    clipPath: "polygon(0 0, 100% 0, 100% 100%, 0 0)",
+                                }}
+                            >
+                                <div className="absolute w-full h-full" style={{transform: 'rotate(0deg)'}}>
+                                    <div 
+                                        className="absolute text-white font-bold text-lg sm:text-xl"
+                                        style={{
+                                            transform: `translateX(70%) translateY(40%) rotate(${(360 / segments.length) / 2}deg)`
+                                        }}
+                                    >
+                                        {segment.label}
+                                    </div>
+                                </div>
+                            </div>
+                        ))}
+                    </motion.div>
+                    
+                    {/* Inner circle */}
+                    <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-24 h-24 sm:w-28 sm:h-28 rounded-full bg-slate-800 border-4 border-slate-600 shadow-inner flex items-center justify-center">
+                        <Play className="w-10 h-10 text-purple-400" />
+                    </div>
+                  </div>
+                  
+                  {/* Result Display */}
+                  <div className="h-20 flex items-center justify-center">
+                    <AnimatePresence>
+                      {isSpinning ? (
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -20 }}
+                          className="text-center"
+                        >
+                          <div className="flex items-center justify-center gap-2 text-purple-400 font-semibold text-xl">
+                            <RotateCcw className="animate-spin" />
+                            <span>Spinning...</span>
+                          </div>
+                          <div className="text-sm text-slate-400 mt-1">Good luck!</div>
+                        </motion.div>
+                      ) : result && (
+                        <motion.div
+                          initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                          animate={{ opacity: 1, scale: 1, y: 0 }}
+                          className="text-center"
+                        >
+                           <motion.div
+                              className={cn(
+                                'text-3xl font-bold mb-2',
+                                result !== 'Lose' ? 'text-emerald-400' : 'text-red-400'
+                              )}
+                              animate={result !== 'Lose' ? { 
+                                textShadow: [
+                                  "0 0 0px rgba(34, 197, 94, 0.5)",
+                                  "0 0 20px rgba(34, 197, 94, 0.8)",
+                                  "0 0 0px rgba(34, 197, 94, 0.5)"
+                                ]
+                              } : {}}
+                              transition={{ duration: 1, repeat: result !== 'Lose' ? 2 : 0 }}
+                            >
+                              {result !== 'Lose' ? `🏆 WINNER! ${result}` : '💔 TRY AGAIN!'}
+                           </motion.div>
+                           <div className="text-slate-400">
+                             {result !== 'Lose'
+                               ? `Congratulations! You hit ${result}!`
+                               : 'Better luck on the next spin!'}
+                           </div>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
+                  
+                  {/* Action Button */}
+                  <motion.div className="w-full">
+                    <Button 
+                        size="lg" 
+                        onClick={spinWheel} 
+                        disabled={isSpinning || betAmount > inrBalance || betAmount <= 0}
+                        className={cn(
+                          "w-full h-16 text-xl font-bold shadow-2xl transition-all duration-300 relative overflow-hidden group",
+                          result && result !== 'Lose' 
+                            ? 'bg-gradient-to-r from-emerald-500 to-green-500 hover:from-emerald-600 hover:to-green-600 animate-pulse' 
+                            : 'bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-700 hover:to-fuchsia-700'
+                        )}
+                    >
+                      <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-700" />
+                      <span className="relative z-10 flex items-center justify-center gap-3">
+                          {isSpinning ? (
+                            <>
+                              <RotateCcw className="animate-spin" />
+                              Spinning...
+                            </>
+                          ) : (
+                            <>
+                              <Play />
+                              Spin for ₹{betAmount}
+                            </>
+                          )}
+                      </span>
+                    </Button>
+                  </motion.div>
+                </CardContent>
+              </Card>
+          </motion.div>
+
+          {/* Side Panel */}
+          <div className="space-y-6">
+            {/* Bet Amount */}
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.1 }}>
+                <Card className="bg-slate-800/50 backdrop-blur-xl border-slate-700/50 shadow-xl">
+                <CardHeader>
+                  <CardTitle className="text-xl text-slate-200 flex items-center gap-2">
+                    <Wallet className="w-5 h-5"/>
+                    Bet Amount
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                    <div className="relative">
+                      <Input
+                          type="number"
+                          value={betAmount}
+                          onChange={(e) => setBetAmount(Math.max(0, Number(e.target.value)))}
+                          className="text-center text-xl font-bold h-14 bg-slate-700/50 border-slate-600 text-slate-200 focus:border-purple-500 focus:ring-purple-500/20"
+                          disabled={isSpinning}
+                          placeholder="Enter amount"
+                      />
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400">
+                        ₹
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-2">
+                    {[10, 25, 50, 100].map((amount) => (
+                        <Button
+                        key={amount}
+                        variant="outline"
+                        onClick={() => setBetAmount(amount)}
+                        disabled={isSpinning || amount > inrBalance}
+                        className="bg-slate-700/30 border-slate-600 text-slate-200 hover:bg-slate-600/50 hover:border-purple-500"
+                        >
+                        ₹{amount}
+                        </Button>
+                    ))}
+                    </div>
+                    
+                    <Button
+                      variant="secondary"
+                      onClick={() => setBetAmount(inrBalance)}
+                      disabled={isSpinning}
+                      className="w-full bg-gradient-to-r from-red-600/20 to-orange-600/20 border-red-500/30 text-red-300 hover:from-red-600/30 hover:to-orange-600/30"
+                    >
+                      All In (₹{inrBalance.toLocaleString()})
+                    </Button>
+                </CardContent>
+                </Card>
+            </motion.div>
+
+            {/* Game Info */}
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}>
+                <Card className="bg-slate-800/50 backdrop-blur-xl border-slate-700/50 shadow-xl">
+                    <CardHeader>
+                        <CardTitle className="text-xl text-slate-200 flex items-center gap-2">
+                            <Target className="w-5 h-5"/>
+                            Game Info
+                        </CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-4">
+                        <div className="grid grid-cols-2 gap-4 text-sm">
+                          <div className="text-center p-3 rounded-lg bg-slate-700/30 border border-slate-600/50">
+                            <div className="text-slate-400">Max Win</div>
+                            <div className="text-xl font-bold text-emerald-400">₹{potentialWin.toLocaleString()}</div>
+                          </div>
+                          <div className="text-center p-3 rounded-lg bg-slate-700/30 border border-slate-600/50">
+                            <div className="text-slate-400">Win Chance</div>
+                            <div className="text-xl font-bold text-blue-400">{winChance}%</div>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between items-center">
+                              <span className="text-slate-400">Games Played</span>
+                              <span className="font-semibold text-slate-200">{totalGames}</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                              <span className="text-slate-400">Best Multiplier</span>
+                              <span className="font-semibold text-orange-400">{bestMultiplier.toFixed(2)}x</span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                              <span className="text-slate-400">Current Streak</span>
+                              <span className="font-semibold text-purple-400">{streak}</span>
+                          </div>
+                        </div>
+                    </CardContent>
+                </Card>
+            </motion.div>
+
+            {/* Segments */}
+             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}>
+                <Card className="bg-slate-800/50 backdrop-blur-xl border-slate-700/50 shadow-xl">
+                    <CardHeader>
+                        <CardTitle className="text-xl text-slate-200">Segments</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-2">
+                        {segments.map((segment, index) => (
+                            <div key={index} className="flex items-center justify-between p-2 rounded-lg bg-slate-700/30">
+                                <div className="flex items-center space-x-2">
+                                    <div className={cn("w-4 h-4 rounded-full", segment.bgColor)}></div>
+                                    <span className="font-medium text-slate-200">{segment.label}</span>
+                                </div>
+                                <span className="text-slate-400 text-sm">{segment.probability}%</span>
+                            </div>
+                        ))}
+                    </CardContent>
+                </Card>
+            </motion.div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
